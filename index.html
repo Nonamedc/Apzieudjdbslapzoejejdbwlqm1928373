@@ -9,6 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="BlindTest Pro">
 <meta name="theme-color" content="#06060F">
 <title>🎵 BLINDTEST PRO</title>
+<link rel="manifest" href="manifest.json">
 <script src="https://cdn.ably.com/lib/ably.min-2.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -2968,12 +2969,14 @@ async function boot() {
   checkJoinParam();
   await tryRestoreHandles();
   render();
+
   if (S._autoJoinCode) {
     setTimeout(() => {
       const inp = document.getElementById('multi-code');
       if (inp) { inp.value = S._autoJoinCode; inp.focus(); }
     }, 200);
   }
+
   if (!getUserPseudo()) {
     setTimeout(() => showPseudoModal(), 600);
   }
