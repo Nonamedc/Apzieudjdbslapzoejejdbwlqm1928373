@@ -1,27 +1,24 @@
 {
   "name": "BlindTest Pro",
   "short_name": "BlindTest",
-  "description": "Le meilleur blind test multijoueur en ligne !",
-  "start_url": "/index.html",
+  "description": "Blind test multijoueur en ligne",
+  "start_url": "./",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#06060F",
-  "theme_color": "#F97316",
-  "orientation": "portrait-primary",
+  "theme_color": "#06060F",
   "icons": [
     {
-      "src": "icons/icon-192.png",
+      "src": "icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "icons/icon-512.png",
+      "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ],
-  "categories": ["games", "entertainment"],
-  "lang": "fr-FR",
-  "dir": "ltr"
+  ]
 }
