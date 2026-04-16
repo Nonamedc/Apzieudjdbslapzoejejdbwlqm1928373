@@ -1,39 +1,90 @@
-const CACHE = 'bt-cache-v2';
+/* ══════════════════════════════════════════════════════
+   BLINDTEST PRO — Service Worker
+   Stratégie : App Shell (cache-first) + Network-only
+   pour les APIs temps réel (Ably, Firebase)
+   ══════════════════════════════════════════════════════ */
 
-self.addEventListener('install', e => {
-  self.skipWaiting();
-});
+const CACHE_NAME = 'blindtest-pro-v1';
 
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    ).then(() => clients.claim())
+// Ressources à mettre en cache au premier install
+const PRECACHE_URLS = [
+  './index.html',
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png'
+];
+
+// Domaines réseau-only (temps réel / API)
+const NETWORK_ONLY_HOSTS = [
+  'cdn.ably.com',
+  'realtime.ably.io',
+  'rest.ably.io',
+  'firebaseio.com',
+  'googleapis.com',
+  'archive.org',
+  'cdnjs.cloudflare.com',
+  'cdn.jsdelivr.net',
+  'fonts.googleapis.com',
+  'fonts.gstatic.com'
+];
+
+// ── INSTALL : précache du shell ──────────────────────
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(PRECACHE_URLS))
+      .then(() => self.skipWaiting())
   );
 });
 
-self.addEventListener('fetch', e => {
-  const req = e.request;
-  if (req.method !== 'GET') return;
-  const url = new URL(req.url);
-
-  // Ignorer Archive.org et Ably (trop volumineux / temps réel)
-  if (url.hostname.includes('archive.org')) return;
-  if (url.hostname.includes('ably.')) return;
-  if (url.hostname.includes('realtime.ably.')) return;
-
-  // Ressources same-origin : stale-while-revalidate
-  if (url.origin === self.location.origin) {
-    e.respondWith(
-      caches.open(CACHE).then(cache =>
-        cache.match(req).then(cached => {
-          const networkFetch = fetch(req).then(res => {
-            if (res && res.status === 200) cache.put(req, res.clone());
-            return res;
-          }).catch(() => cached);
-          return cached || networkFetch;
-        })
+// ── ACTIVATE : nettoyage anciens caches ──────────────
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys
+          .filter(key => key !== CACHE_NAME)
+          .map(key => caches.delete(key))
       )
-    );
+    ).then(() => self.clients.claim())
+  );
+});
+
+// ── FETCH : stratégie hybride ─────────────────────────
+self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+
+  // Réseau seul pour APIs temps réel
+  if (NETWORK_ONLY_HOSTS.some(host => url.hostname.includes(host))) {
+    event.respondWith(fetch(event.request));
+    return;
   }
+
+  // Réseau seul pour requêtes non-GET
+  if (event.request.method !== 'GET') {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Cache-first pour les ressources du shell
+  event.respondWith(
+    caches.match(event.request).then(cached => {
+      if (cached) return cached;
+
+      return fetch(event.request).then(response => {
+        // Ne cache que les réponses valides
+        if (!response || response.status !== 200 || response.type === 'opaque') {
+          return response;
+        }
+        const toCache = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, toCache));
+        return response;
+      }).catch(() => {
+        // Fallback offline : renvoie index.html pour les navigations
+        if (event.request.mode === 'navigate') {
+          return caches.match('./index.html');
+        }
+      });
+    })
+  );
 });
