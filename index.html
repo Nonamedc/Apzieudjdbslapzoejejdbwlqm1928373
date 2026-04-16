@@ -2951,6 +2951,7 @@ function shareScore() {
 
   if (navigator.share) {
     navigator.share({ title: 'BlindTest Pro — Résultats', text }).catch(() => {});
+    
   } else {
     navigator.clipboard.writeText(text)
       .then(() => showToast('📋 Résultats copiés dans le presse-papiers !', 3000))
@@ -2962,7 +2963,18 @@ function shareScore() {
 window.importPlaylistJSON = importPlaylistJSON;
 window.shareScore = shareScore;
 window.renderStats = renderStats;
-
+async function registerServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js');  // ← important : chemin depuis la racine
+      console.log('✅ Service Worker enregistré avec succès ! Scope :', registration.scope);
+    } catch (error) {
+      console.error('❌ Échec de l’enregistrement du Service Worker :', error);
+    }
+  } else {
+    console.warn('Service Worker non supporté par ce navigateur');
+  }
+}
 async function boot() {
   getUserId();
   loadVolume();
@@ -2979,6 +2991,7 @@ async function boot() {
 
   if (!getUserPseudo()) {
     setTimeout(() => showPseudoModal(), 600);
+    await registerServiceWorker();
   }
 }
 
