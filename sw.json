@@ -1,39 +1,86 @@
-// BlindTest Pro — Service Worker
-const CACHE = 'bt-cache-v1';
+const CACHE_NAME = 'blindtest-pro-v2.4';
+const urlsToCache = [
+  './',
+  'index.html',
+  'manifest.json',
+  'https://cdn.ably.com/lib/ably.min-2.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
+  'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js',
+  'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Space+Mono:wght@700&family=Nunito:wght@600;700;800&display=swap'
+];
 
-self.addEventListener('install', e => {
+// Installation du Service Worker
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        console.log('✅ Cache ouvert pour BlindTest Pro');
+        return cache.addAll(urlsToCache);
+      })
+      .catch(err => console.warn('⚠️ Erreur lors du pré-cache :', err))
+  );
   self.skipWaiting();
 });
 
-self.addEventListener('activate', e => {
-  e.waitUntil(clients.claim());
+// Activation + nettoyage des anciens caches
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cache => {
+          if (cache !== CACHE_NAME) {
+            console.log('🗑 Suppression ancien cache :', cache);
+            return caches.delete(cache);
+          }
+        })
+      );
+    })
+  );
+  self.clients.claim();
 });
 
-self.addEventListener('fetch', e => {
-  const req = e.request;
-  if (req.method !== 'GET') return;
+// Stratégie de cache : Network First avec fallback sur cache
+self.addEventListener('fetch', event => {
+  // Ne pas intercepter les requêtes Ably (realtime)
+  if (event.request.url.includes('ably.com')) {
+    return;
+  }
 
-  const url = new URL(req.url);
+  event.respondWith(
+    fetch(event.request)
+      .then(response => {
+        // Ne pas mettre en cache les réponses d'erreur ou les requêtes non GET
+        if (!response || response.status !== 200 || response.type !== 'basic') {
+          return response;
+        }
 
-  // Ne pas cacher Archive.org (trop volumineux)
-  if (url.hostname.includes('archive.org')) return;
-  // Ne pas cacher Ably (temps réel)
-  if (url.hostname.includes('ably.')) return;
-  // Ne pas cacher Firebase
-  if (url.hostname.includes('firebase')) return;
+        const responseToCache = response.clone();
+        caches.open(CACHE_NAME)
+          .then(cache => cache.put(event.request, responseToCache));
 
-  // Stale-while-revalidate pour les ressources du même origin
-  if (url.origin === self.location.origin) {
-    e.respondWith(
-      caches.open(CACHE).then(cache =>
-        cache.match(req).then(cached => {
-          const networkFetch = fetch(req).then(res => {
-            if (res && res.status === 200) cache.put(req, res.clone());
-            return res;
-          }).catch(() => cached);
-          return cached || networkFetch;
-        })
-      )
-    );
+        return response;
+      })
+      .catch(() => {
+        // Fallback sur le cache si offline
+        return caches.match(event.request)
+          .then(cachedResponse => {
+            if (cachedResponse) return cachedResponse;
+
+            // Si c'est une page HTML et qu'on n'a rien en cache → renvoyer index.html (SPA)
+            if (event.request.mode === 'navigate' || 
+                event.request.headers.get('accept').includes('text/html')) {
+              return caches.match('./index.html');
+            }
+
+            return new Response('Offline', { status: 503 });
+          });
+      })
+  );
+});
+
+// Mise à jour du cache quand une nouvelle version est détectée
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
   }
 });
