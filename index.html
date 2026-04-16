@@ -8,7 +8,11 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="BlindTest Pro">
 <meta name="theme-color" content="#06060F">
+<meta name="msapplication-TileColor" content="#06060F">
+<meta name="msapplication-TileImage" content="icon-192.png">
 <link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
 <title>🎵 BLINDTEST PRO</title>
 <script src="https://cdn.ably.com/lib/ably.min-2.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -914,8 +918,8 @@ function renderMultiHostSettings() {
           return `<label class="flex items-center gap-2" style="cursor:pointer;padding:5px 6px;border-radius:6px">
             <input type="checkbox" ${checked?'checked':''} onchange="
               const s=S.btCfg.selectedArtists||[];
-              const i=s.indexOf('${a.replace(/'/g,"\\'")}');
-              if(i>-1)s.splice(i,1);else s.push('${a.replace(/'/g,"\\'")}');
+              const i=s.indexOf('${a.replace(/'/g,"\\u0027")}');
+              if(i>-1)s.splice(i,1);else s.push('${a.replace(/'/g,"\\u0027")}');
               S.btCfg.selectedArtists=[...s];render()" style="accent-color:var(--player)">
             <span class="text-sm">${escHtml(a)}</span>
           </label>`;
@@ -1200,7 +1204,7 @@ function _renderMultiHostGame() {
           </div>`
         : `<div class="choices-grid" style="margin-bottom:10px">
             ${(_multi.currentChoices||[]).map((c,ci) => `
-              <button class="choice-btn" onclick='multiHostAnswer(${JSON.stringify(c).replace(/'/g,"'")})'>
+              <button class="choice-btn" data-choice="${escHtml(c)}" onclick="multiHostAnswer(this.dataset.choice)">
                 <span class="choice-key">${['A','B','C','D'][ci]||ci+1}</span>
                 ${escHtml(c)}
               </button>`).join('')}
@@ -1297,7 +1301,7 @@ function _renderMultiPlayerGame() {
     return `<span class="score-chip" style="${isMe?'border-color:'+col+';color:'+col:''}">
       ${isMe?'<span style="font-size:.7rem">👤</span>':''}
       <span style="font-size:.72rem;font-weight:800">${escHtml(n)}</span>
-      <span style="font-family:\'Space Mono\',monospace;font-size:.7rem">${s.toLocaleString()}</span>
+      <span style="font-family:'Space Mono',monospace;font-size:.7rem">${s.toLocaleString()}</span>
     </span>`;
   }).join('');
 
@@ -1353,7 +1357,7 @@ function _renderMultiPlayerGame() {
         </div>
         <div class="choices-grid">
           ${q.choices.map((c,ci) => `
-            <button class="choice-btn" onclick='multiPlayerAnswer(${JSON.stringify(c).replace(/'/g,"'")})'>
+            <button class="choice-btn" data-choice="${escHtml(c)}" onclick="multiPlayerAnswer(this.dataset.choice)">
               <span class="choice-key">${['A','B','C','D'][ci]||ci+1}</span>
               ${escHtml(c)}
             </button>`).join('')}
@@ -2158,7 +2162,7 @@ async function multiCreateRoom() {
       if (S.screen === 'multi-game') render();
       // Auto-reveal si tout le monde a répondu
       if (_multi.players.length > 0 && _multi.players.every(p => p.answered)) {
-        setTimeout(() => { if (_multi && _multi.phase === 'playing') multiHostReveal(); }, 1500);
+        setTimeout(() => { if (_multi && _multi.phase === 'playing') multiHostReveal(true); }, 1500);
       }
     });
 
@@ -2527,21 +2531,45 @@ function _multiHostStartRound() {
         if (arc)    { arc.setAttribute('stroke-dasharray', `${pct} 100`); arc.setAttribute('stroke', color); }
         if (arcTxt) { arcTxt.textContent = elapsed.toFixed(1) + 's'; arcTxt.style.color = color; }
         if (bar)    { bar.style.width = (rem / _dr * 100) + '%'; }
-        if (txt)    { txt.textContent = Math.ceil(rem) + 's restantes'; }
+        if (txt)    { txt.textContent = Math.ceil(rem) + 's'; }
         if (rem <= 0) clearInterval(_hostSvgTimer);
       }, 100);
     },
-    onEnd: () => { if (_multi && _multi.phase === 'playing') multiHostReveal(); }
+    onEnd: () => { if (_multi && _multi.phase === 'playing') multiHostReveal(true); }
   });
 }
 
-function multiHostReveal() {
+function multiHostReveal(force) {
   if (!_multi || _multi.phase !== 'playing') return;
+
+  // Si l'hôte n'a pas encore répondu et qu'il y a des choix disponibles,
+  // demander confirmation pour éviter une révélation accidentelle
+  const hasChoices = (_multi.currentChoices || []).length > 0;
+  if (!force && _multi.myAnswer === null && hasChoices) {
+    // Afficher un toast-confirm discret plutôt qu'un alert bloquant
+    const old = document.getElementById('_reveal-confirm');
+    if (old) { old.remove(); return; }
+    const box = document.createElement('div');
+    box.id = '_reveal-confirm';
+    box.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:500;background:var(--bg2);border:1.5px solid var(--red);border-radius:14px;padding:14px 18px;text-align:center;max-width:300px;width:90%;box-shadow:0 0 24px rgba(248,113,113,.35)';
+    box.innerHTML = `<p style="font-size:.82rem;font-weight:800;color:var(--red);margin-bottom:8px">⚠️ Tu n'as pas encore répondu !</p>
+      <p style="font-size:.75rem;color:var(--tx3);margin-bottom:12px">Sélectionne d'abord une réponse, ou révèle quand même.</p>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button onclick="document.getElementById('_reveal-confirm').remove()" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--tx);font-weight:800;font-size:.75rem;cursor:pointer">Annuler</button>
+        <button onclick="document.getElementById('_reveal-confirm').remove();multiHostReveal(true)" style="flex:1;padding:8px;border-radius:8px;border:none;background:var(--red);color:#fff;font-weight:800;font-size:.75rem;cursor:pointer">Révéler quand même</button>
+      </div>`;
+    document.body.appendChild(box);
+    setTimeout(() => { if (box.parentNode) box.remove(); }, 6000);
+    return;
+  }
+  const old2 = document.getElementById('_reveal-confirm');
+  if (old2) old2.remove();
+
   // Délai minimum de 4s pour éviter révélation immédiate si erreur audio
   const elapsed = Date.now() - (_multi.roundStartTime || 0);
   const MIN_MS  = 4000;
   if (elapsed < MIN_MS) {
-    setTimeout(() => { if (_multi && _multi.phase === 'playing') multiHostReveal(); }, MIN_MS - elapsed);
+    setTimeout(() => { if (_multi && _multi.phase === 'playing') multiHostReveal(true); }, MIN_MS - elapsed);
     return;
   }
   stopAudio();
@@ -2641,7 +2669,7 @@ function multiHostAnswer(val) {
   const p = _multi.players.find(p => p.name === _multi.hostName);
   if (p) { p.answered = true; p.correct = ok; }
   if (_multi.players.every(p => p.answered)) {
-    setTimeout(() => { if (_multi && _multi.phase === 'playing') multiHostReveal(); }, 1500);
+    setTimeout(() => { if (_multi && _multi.phase === 'playing') multiHostReveal(true); }, 1500);
   }
   try { navigator.vibrate(60); } catch(e) {}
   render();
@@ -2868,7 +2896,7 @@ function renderStats() {
     ${statsHtml}
     <h3 style="margin:16px 0 10px">📜 Historique récent</h3>
     ${histHtml}
-    <button class="btn btn-danger btn-sm" style="margin-top:8px" onclick="if(confirm('Effacer tout l\\'historique ?')){localStorage.removeItem('bt_history');render();}">🗑 Effacer l'historique</button>
+    <button class="btn btn-danger btn-sm" style="margin-top:8px" onclick="if(confirm('Effacer tout l\u0027historique ?')){localStorage.removeItem('bt_history');render();}">🗑 Effacer l'historique</button>
   </div>`;
 }
 
@@ -2934,17 +2962,6 @@ function shareScore() {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// PWA SETUP
-// ═══════════════════════════════════════════════════════════════
-function _setupPWA() {
-  // Manifest = fichier statique manifest.json (blob: URLs rejetées par les navigateurs)
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('[PWA] SW enregistré :', reg.scope))
-      .catch(err => console.warn('[PWA] SW échec :', err));
-  }
-}
 
 // Exposer les nouvelles fonctions
 window.importPlaylistJSON = importPlaylistJSON;
@@ -2955,7 +2972,6 @@ async function boot() {
   getUserId();
   loadVolume();
   checkJoinParam();
-  _setupPWA();
   await tryRestoreHandles();
   render();
   if (S._autoJoinCode) {
@@ -3076,6 +3092,15 @@ document.addEventListener('visibilitychange', () => {
     }
   }
 });
+
+// ══ PWA — Enregistrement du Service Worker ══
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('[SW] Enregistré :', reg.scope))
+      .catch(err => console.warn('[SW] Échec :', err));
+  });
+}
 </script>
 
 <!-- ══ MODALE SCANNER QR ══ -->
