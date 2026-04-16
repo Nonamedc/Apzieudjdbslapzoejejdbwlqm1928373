@@ -8,11 +8,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="BlindTest Pro">
 <meta name="theme-color" content="#06060F">
-<link rel="manifest" id="pwa-manifest">
+<link rel="manifest" href="manifest.json">
 <title>🎵 BLINDTEST PRO</title>
 <script src="https://cdn.ably.com/lib/ably.min-2.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Space+Mono:wght@700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
@@ -863,17 +862,10 @@ function renderMultiSetup() {
         </div>
         <span class="badge badge-player" style="margin-left:auto">JOUEUR</span>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:10px">
-        <input type="text" id="multi-code" placeholder="Code"
-          maxlength="5"
-          style="text-transform:uppercase;text-align:center;font-family:'Space Mono',monospace;font-size:1.4rem;letter-spacing:8px;flex:1;min-width:0"
-          oninput="this.value=this.value.toUpperCase()">
-        <button onclick="openQrScanner()" title="Scanner un QR code"
-          style="flex-shrink:0;width:52px;height:52px;border-radius:12px;border:1px solid rgba(34,211,238,.35);background:rgba(34,211,238,.1);color:var(--player);font-size:1.4rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s"
-          onmouseenter="this.style.background='rgba(34,211,238,.2)'" onmouseleave="this.style.background='rgba(34,211,238,.1)'">
-          📷
-        </button>
-      </div>
+      <input type="text" id="multi-code" placeholder="Code"
+        maxlength="5"
+        style="text-transform:uppercase;text-align:center;font-family:'Space Mono',monospace;font-size:1.4rem;letter-spacing:8px;margin-bottom:10px"
+        oninput="this.value=this.value.toUpperCase()">
       <input type="text" id="multi-name" placeholder="Ton prénom" maxlength="16" style="margin-bottom:12px" value="${escHtml(getUserPseudo() || '')}">
       <button id="multi-join-btn" class="btn btn-player btn-full btn-lg"
         onclick="multiJoinRoom(document.getElementById('multi-code').value,document.getElementById('multi-name').value)">
@@ -2938,66 +2930,12 @@ function shareScore() {
 // PWA SETUP
 // ═══════════════════════════════════════════════════════════════
 function _setupPWA() {
-  // Manifest dynamique (installable sur écran d'accueil)
-  try {
-    const iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#06060F" rx="80"/><text x="256" y="340" font-size="280" text-anchor="middle" fill="#22D3EE">🎵</text></svg>`;
-    const iconURL = 'data:image/svg+xml;base64,' + btoa(iconSVG);
-    const manifest = {
-      name: 'BlindTest Pro',
-      short_name: 'BlindTest',
-      description: 'Blind test multijoueur en ligne',
-      start_url: './',
-      display: 'standalone',
-      orientation: 'portrait',
-      background_color: '#06060F',
-      theme_color: '#06060F',
-      icons: [
-        { src: iconURL, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
-      ]
-    };
-    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-    const url  = URL.createObjectURL(blob);
-    const link = document.getElementById('pwa-manifest');
-    if (link) link.href = url;
-  } catch(e) { console.warn('[PWA] Manifest error:', e); }
-
-  // Service Worker (cache offline)
+  // Le manifest est un fichier statique (manifest.json) — les blob: URLs
+  // ne fonctionnent pas pour les PWA (origine nulle rejetée par les navigateurs).
   if ('serviceWorker' in navigator) {
-    try {
-      const swSrc = `
-const CACHE = 'bt-cache-v1';
-const PRECACHE = [];
-self.addEventListener('install', e => { self.skipWaiting(); });
-self.addEventListener('activate', e => { e.waitUntil(clients.claim()); });
-self.addEventListener('fetch', e => {
-  const req = e.request;
-  if (req.method !== 'GET') return;
-  const url = new URL(req.url);
-  // Ne pas cacher les ressources Archive.org (trop volumineuses)
-  if (url.hostname.includes('archive.org')) return;
-  // Ne pas cacher Ably
-  if (url.hostname.includes('ably.')) return;
-  // Cache-first pour ressources statiques, network-first sinon
-  if (url.origin === self.location.origin) {
-    e.respondWith(
-      caches.open(CACHE).then(cache =>
-        cache.match(req).then(cached => {
-          const networkFetch = fetch(req).then(res => {
-            if (res && res.status === 200) cache.put(req, res.clone());
-            return res;
-          }).catch(() => cached);
-          return cached || networkFetch;
-        })
-      )
-    );
-  }
-});`;
-      const swBlob = new Blob([swSrc], { type: 'application/javascript' });
-      const swURL  = URL.createObjectURL(swBlob);
-      navigator.serviceWorker.register(swURL).catch(() => {
-        // SW blob non supporté dans ce contexte — pas bloquant
-      });
-    } catch(e) { /* pas critique */ }
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('[PWA] SW enregistré :', reg.scope))
+      .catch(err => console.warn('[PWA] SW échec :', err));
   }
 }
 
@@ -3046,82 +2984,6 @@ window.copyJoinLink = copyJoinLink;
 window.sendReaction = sendReaction;
 window.showToast = showToast;
 
-// ═══════════════════════════════════════════════════════════════
-// QR CODE SCANNER
-// ═══════════════════════════════════════════════════════════════
-var _qrScanInterval = null;
-var _qrStream = null;
-
-function openQrScanner() {
-  var modal = document.getElementById('qr-scanner-modal');
-  if (!modal) return;
-  modal.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-  var video = document.getElementById('qr-video');
-  var status = document.getElementById('qr-status');
-  status.textContent = 'Autorisation caméra…';
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
-    .then(function(stream) {
-      _qrStream = stream;
-      video.srcObject = stream;
-      video.setAttribute('playsinline', true);
-      video.play();
-      status.textContent = 'Pointe vers le QR code';
-      _startQrDecode();
-    })
-    .catch(function(err) {
-      status.textContent = '⚠️ Caméra non disponible';
-      console.warn('QR cam error:', err);
-    });
-}
-
-function closeQrScanner() {
-  _stopQrScan();
-  var modal = document.getElementById('qr-scanner-modal');
-  if (modal) modal.style.display = 'none';
-  document.body.style.overflow = '';
-}
-
-function _stopQrScan() {
-  if (_qrScanInterval) { clearInterval(_qrScanInterval); _qrScanInterval = null; }
-  if (_qrStream) { _qrStream.getTracks().forEach(function(t){ t.stop(); }); _qrStream = null; }
-  var video = document.getElementById('qr-video');
-  if (video) { video.srcObject = null; }
-}
-
-function _startQrDecode() {
-  var video = document.getElementById('qr-video');
-  var canvas = document.getElementById('qr-canvas');
-  var ctx = canvas.getContext('2d');
-  _qrScanInterval = setInterval(function() {
-    if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) return;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    var code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
-    if (code && code.data) { _onQrFound(code.data); }
-  }, 200);
-}
-
-function _onQrFound(data) {
-  _stopQrScan();
-  var match = data.match(/[?&]join=([A-Z0-9]{5})/i) || data.match(/\b([A-Z0-9]{5})\b/i);
-  var code = match ? match[1].toUpperCase() : data.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,5);
-  var input = document.getElementById('multi-code');
-  if (input && code) {
-    input.value = code;
-    input.style.transition = 'background .3s';
-    input.style.background = 'rgba(74,222,128,.25)';
-    setTimeout(function(){ input.style.background = ''; }, 800);
-  }
-  closeQrScanner();
-  showToast('✅ Code ' + code + ' scanné !');
-}
-
-window.openQrScanner = openQrScanner;
-window.closeQrScanner = closeQrScanner;
-
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     if (_audio && !_audio.paused) { _audio.pause(); }
@@ -3132,33 +2994,5 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 </script>
-
-<!-- ══ MODALE SCANNER QR ══ -->
-<div id="qr-scanner-modal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.92);align-items:center;justify-content:center;flex-direction:column;padding:20px">
-  <div style="width:100%;max-width:360px;background:var(--bg2);border:1px solid rgba(34,211,238,.3);border-radius:20px;overflow:hidden;box-shadow:0 0 40px rgba(34,211,238,.2)">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border)">
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:1.3rem">📷</span>
-        <span style="font-weight:800;font-size:.95rem;color:var(--player)">Scanner le QR code</span>
-      </div>
-      <button onclick="closeQrScanner()" style="background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);color:var(--red);border-radius:8px;padding:5px 12px;cursor:pointer;font-weight:800;font-size:.8rem">&#x2715; Fermer</button>
-    </div>
-    <div style="position:relative;background:#000;aspect-ratio:1/1;overflow:hidden">
-      <video id="qr-video" style="width:100%;height:100%;object-fit:cover" autoplay muted playsinline></video>
-      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
-        <div style="position:relative;width:60%;aspect-ratio:1/1;border:2px solid rgba(34,211,238,.5);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.45)">
-          <div style="position:absolute;top:-3px;left:-3px;width:22px;height:22px;border-top:3px solid var(--player);border-left:3px solid var(--player);border-radius:10px 0 0 0"></div>
-          <div style="position:absolute;top:-3px;right:-3px;width:22px;height:22px;border-top:3px solid var(--player);border-right:3px solid var(--player);border-radius:0 10px 0 0"></div>
-          <div style="position:absolute;bottom:-3px;left:-3px;width:22px;height:22px;border-bottom:3px solid var(--player);border-left:3px solid var(--player);border-radius:0 0 0 10px"></div>
-          <div style="position:absolute;bottom:-3px;right:-3px;width:22px;height:22px;border-bottom:3px solid var(--player);border-right:3px solid var(--player);border-radius:0 0 10px 0"></div>
-        </div>
-      </div>
-    </div>
-    <div style="padding:14px 18px;text-align:center">
-      <p id="qr-status" style="color:var(--tx3);font-size:.85rem;font-weight:700">Initialisation…</p>
-    </div>
-  </div>
-</div>
-<canvas id="qr-canvas" style="display:none"></canvas>
 </body>
 </html>
