@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="BlindTest Pro">
 <meta name="theme-color" content="#06060F">
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" id="pwa-manifest">
 <title>🎵 BLINDTEST PRO</title>
 <script src="https://cdn.ably.com/lib/ably.min-2.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -1200,7 +1200,7 @@ function _renderMultiHostGame() {
           </div>`
         : `<div class="choices-grid" style="margin-bottom:10px">
             ${(_multi.currentChoices||[]).map((c,ci) => `
-              <button class="choice-btn" onclick='multiHostAnswer(${JSON.stringify(c).replace(/'/g,"'")})'>
+              <button class="choice-btn" data-choice="${escHtml(c)}" onclick="multiHostAnswer(this.dataset.choice)">
                 <span class="choice-key">${['A','B','C','D'][ci]||ci+1}</span>
                 ${escHtml(c)}
               </button>`).join('')}
@@ -1353,7 +1353,7 @@ function _renderMultiPlayerGame() {
         </div>
         <div class="choices-grid">
           ${q.choices.map((c,ci) => `
-            <button class="choice-btn" onclick='multiPlayerAnswer(${JSON.stringify(c).replace(/'/g,"'")})'>
+            <button class="choice-btn" data-choice="${escHtml(c)}" onclick="multiPlayerAnswer(this.dataset.choice)">
               <span class="choice-key">${['A','B','C','D'][ci]||ci+1}</span>
               ${escHtml(c)}
             </button>`).join('')}
@@ -2158,7 +2158,7 @@ async function multiCreateRoom() {
       if (S.screen === 'multi-game') render();
       // Auto-reveal si tout le monde a répondu
       if (_multi.players.length > 0 && _multi.players.every(p => p.answered)) {
-        setTimeout(() => { if (_multi && _multi.phase === 'playing') multiHostReveal(); }, 1500);
+        setTimeout(() => { if (_multi && _multi.phase === 'playing') multiHostReveal(true); }, 1500);
       }
     });
 
@@ -2527,21 +2527,45 @@ function _multiHostStartRound() {
         if (arc)    { arc.setAttribute('stroke-dasharray', `${pct} 100`); arc.setAttribute('stroke', color); }
         if (arcTxt) { arcTxt.textContent = elapsed.toFixed(1) + 's'; arcTxt.style.color = color; }
         if (bar)    { bar.style.width = (rem / _dr * 100) + '%'; }
-        if (txt)    { txt.textContent = Math.ceil(rem) + 's restantes'; }
+        if (txt)    { txt.textContent = Math.ceil(rem) + 's'; }
         if (rem <= 0) clearInterval(_hostSvgTimer);
       }, 100);
     },
-    onEnd: () => { if (_multi && _multi.phase === 'playing') multiHostReveal(); }
+    onEnd: () => { if (_multi && _multi.phase === 'playing') multiHostReveal(true); }
   });
 }
 
-function multiHostReveal() {
+function multiHostReveal(force) {
   if (!_multi || _multi.phase !== 'playing') return;
+
+  // Si l'hôte n'a pas encore répondu et qu'il y a des choix disponibles,
+  // demander confirmation pour éviter une révélation accidentelle
+  const hasChoices = (_multi.currentChoices || []).length > 0;
+  if (!force && _multi.myAnswer === null && hasChoices) {
+    // Afficher un toast-confirm discret plutôt qu'un alert bloquant
+    const old = document.getElementById('_reveal-confirm');
+    if (old) { old.remove(); return; }
+    const box = document.createElement('div');
+    box.id = '_reveal-confirm';
+    box.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:500;background:var(--bg2);border:1.5px solid var(--red);border-radius:14px;padding:14px 18px;text-align:center;max-width:300px;width:90%;box-shadow:0 0 24px rgba(248,113,113,.35)';
+    box.innerHTML = `<p style="font-size:.82rem;font-weight:800;color:var(--red);margin-bottom:8px">⚠️ Tu n'as pas encore répondu !</p>
+      <p style="font-size:.75rem;color:var(--tx3);margin-bottom:12px">Sélectionne d'abord une réponse, ou révèle quand même.</p>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button onclick="document.getElementById('_reveal-confirm').remove()" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--tx);font-weight:800;font-size:.75rem;cursor:pointer">Annuler</button>
+        <button onclick="document.getElementById('_reveal-confirm').remove();multiHostReveal(true)" style="flex:1;padding:8px;border-radius:8px;border:none;background:var(--red);color:#fff;font-weight:800;font-size:.75rem;cursor:pointer">Révéler quand même</button>
+      </div>`;
+    document.body.appendChild(box);
+    setTimeout(() => { if (box.parentNode) box.remove(); }, 6000);
+    return;
+  }
+  const old2 = document.getElementById('_reveal-confirm');
+  if (old2) old2.remove();
+
   // Délai minimum de 4s pour éviter révélation immédiate si erreur audio
   const elapsed = Date.now() - (_multi.roundStartTime || 0);
   const MIN_MS  = 4000;
   if (elapsed < MIN_MS) {
-    setTimeout(() => { if (_multi && _multi.phase === 'playing') multiHostReveal(); }, MIN_MS - elapsed);
+    setTimeout(() => { if (_multi && _multi.phase === 'playing') multiHostReveal(true); }, MIN_MS - elapsed);
     return;
   }
   stopAudio();
@@ -2641,7 +2665,7 @@ function multiHostAnswer(val) {
   const p = _multi.players.find(p => p.name === _multi.hostName);
   if (p) { p.answered = true; p.correct = ok; }
   if (_multi.players.every(p => p.answered)) {
-    setTimeout(() => { if (_multi && _multi.phase === 'playing') multiHostReveal(); }, 1500);
+    setTimeout(() => { if (_multi && _multi.phase === 'playing') multiHostReveal(true); }, 1500);
   }
   try { navigator.vibrate(60); } catch(e) {}
   render();
@@ -2938,11 +2962,66 @@ function shareScore() {
 // PWA SETUP
 // ═══════════════════════════════════════════════════════════════
 function _setupPWA() {
-  // Manifest = fichier statique manifest.json (blob: URLs rejetées par les navigateurs)
+  // Manifest dynamique (installable sur écran d'accueil)
+  try {
+    const iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#06060F" rx="80"/><text x="256" y="340" font-size="280" text-anchor="middle" fill="#22D3EE">🎵</text></svg>`;
+    const iconURL = 'data:image/svg+xml;base64,' + btoa(iconSVG);
+    const manifest = {
+      name: 'BlindTest Pro',
+      short_name: 'BlindTest',
+      description: 'Blind test multijoueur en ligne',
+      start_url: './',
+      display: 'standalone',
+      orientation: 'portrait',
+      background_color: '#06060F',
+      theme_color: '#06060F',
+      icons: [
+        { src: iconURL, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+      ]
+    };
+    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const link = document.getElementById('pwa-manifest');
+    if (link) link.href = url;
+  } catch(e) { console.warn('[PWA] Manifest error:', e); }
+
+  // Service Worker (cache offline)
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('[PWA] SW enregistré :', reg.scope))
-      .catch(err => console.warn('[PWA] SW échec :', err));
+    try {
+      const swSrc = `
+const CACHE = 'bt-cache-v1';
+const PRECACHE = [];
+self.addEventListener('install', e => { self.skipWaiting(); });
+self.addEventListener('activate', e => { e.waitUntil(clients.claim()); });
+self.addEventListener('fetch', e => {
+  const req = e.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  // Ne pas cacher les ressources Archive.org (trop volumineuses)
+  if (url.hostname.includes('archive.org')) return;
+  // Ne pas cacher Ably
+  if (url.hostname.includes('ably.')) return;
+  // Cache-first pour ressources statiques, network-first sinon
+  if (url.origin === self.location.origin) {
+    e.respondWith(
+      caches.open(CACHE).then(cache =>
+        cache.match(req).then(cached => {
+          const networkFetch = fetch(req).then(res => {
+            if (res && res.status === 200) cache.put(req, res.clone());
+            return res;
+          }).catch(() => cached);
+          return cached || networkFetch;
+        })
+      )
+    );
+  }
+});`;
+      const swBlob = new Blob([swSrc], { type: 'application/javascript' });
+      const swURL  = URL.createObjectURL(swBlob);
+      navigator.serviceWorker.register(swURL).catch(() => {
+        // SW blob non supporté dans ce contexte — pas bloquant
+      });
+    } catch(e) { /* pas critique */ }
   }
 }
 
