@@ -1,0 +1,3052 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BlindTest Pro">
+<meta name="theme-color" content="#06060F">
+<link rel="manifest" id="pwa-manifest">
+<title>🎵 BLINDTEST PRO</title>
+<script src="https://cdn.ably.com/lib/ably.min-2.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Space+Mono:wght@700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════════
+   BLINDTEST PRO — NEON GAME SHOW REDESIGN v2
+   ══════════════════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow-x:hidden}
+:root{
+  --bg:#06060F;--bg2:#0D0D24;--bg3:#14142E;--bg4:#1B1B3A;
+  --host:#F97316;--player:#22D3EE;--gold:#FCD34D;
+  --green:#4ADE80;--red:#F87171;--purple:#C084FC;
+  --glow-host:0 0 28px rgba(249,115,22,.4);
+  --glow-player:0 0 28px rgba(34,211,238,.4);
+  --glow-gold:0 0 28px rgba(252,211,77,.45);
+  --glow-green:0 0 24px rgba(74,222,128,.4);
+  --glow-red:0 0 24px rgba(248,113,113,.4);
+  --glow-purple:0 0 24px rgba(192,132,252,.35);
+  --tx:#F1F5F9;--tx2:#64748B;--tx3:#94A3B8;
+  --border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.11);
+  /* legacy */
+  --p:var(--purple);--p2:#D8B4FE;--c:var(--player);--c2:#67E8F9;
+  --y:var(--gold);--g:var(--green);--r:var(--red);
+  --gp:var(--glow-purple);--gc:var(--glow-player);--gy:var(--glow-gold);
+  --sidebar-w:0px;
+}
+body{background:var(--bg);color:var(--tx);font-family:'Nunito','Segoe UI',sans-serif;min-height:100vh;overflow-x:hidden;-webkit-overflow-scrolling:touch;-webkit-tap-highlight-color:transparent}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 10% 15%,rgba(249,115,22,.055) 0%,transparent 50%),radial-gradient(ellipse at 90% 85%,rgba(34,211,238,.045) 0%,transparent 50%),radial-gradient(ellipse at 50% 45%,rgba(192,132,252,.03) 0%,transparent 65%);pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.022) 2px,rgba(0,0,0,.022) 4px);pointer-events:none;z-index:999}
+
+/* ── LAYOUT ── */
+#layout{display:flex;min-height:100vh;position:relative;z-index:1;width:100%;overflow-x:hidden}
+#sidebar{display:none!important}
+#main-content{margin-left:0;flex:1;display:flex;flex-direction:column;min-height:100vh;width:100%;overflow-x:hidden;padding-bottom:68px}
+.screen{flex:1;padding:16px;width:100%;max-width:100%;overflow-x:hidden;animation:fadeIn .22s ease-out}
+
+/* ── BOTTOM NAV ── */
+#bottom-nav{display:block;position:fixed;bottom:0;left:0;right:0;background:rgba(13,13,36,.97);backdrop-filter:blur(14px);border-top:1px solid var(--border2);z-index:100;padding:4px 0 max(4px,env(safe-area-inset-bottom))}
+.bnav-items{display:flex;justify-content:space-around}
+.bnav-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 10px;cursor:pointer;color:var(--tx2);font-family:'Nunito',sans-serif;font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.8px;border:none;background:transparent;min-width:52px;transition:color .15s}
+.bnav-item .bni{font-size:1.25rem;line-height:1}
+.bnav-item.active,.bnav-item.active-c{color:var(--player)}
+.bnav-item.active-y{color:var(--gold)}
+.bnav-item.active-g{color:var(--green)}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes pop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+@keyframes blink{50%{opacity:0}}
+@keyframes slideUp{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+@keyframes shimmer{from{background-position:200% center}to{background-position:-200% center}}
+@keyframes pulse-border{0%,100%{box-shadow:var(--glow-red)}50%{box-shadow:0 0 45px rgba(248,113,113,.75)}}
+@keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1)}70%{opacity:.9;transform:translateY(-70px) scale(1.4)}100%{opacity:0;transform:translateY(-110px) scale(1.1)}}
+@keyframes toastIn{from{opacity:0;bottom:60px}to{opacity:1;bottom:80px}}
+@keyframes countdownUrgent{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+
+/* ── TYPOGRAPHY ── */
+h1{font-family:'Barlow Condensed','Impact',sans-serif;font-weight:900;font-size:clamp(2rem,8vw,4.5rem);letter-spacing:4px;text-transform:uppercase;line-height:1}
+h2{font-family:'Barlow Condensed','Impact',sans-serif;font-weight:700;font-size:clamp(1.2rem,4vw,2rem);letter-spacing:2px;text-transform:uppercase}
+h3{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:2.5px;color:var(--tx2);margin-bottom:10px}
+.display{font-family:'Barlow Condensed','Impact',sans-serif;font-weight:900;letter-spacing:2px;text-transform:uppercase;line-height:1}
+.mono{font-family:'Space Mono','Courier New',monospace;font-weight:700}
+
+/* ── NEON TEXT ── */
+.neon-host{color:var(--host);text-shadow:var(--glow-host)}
+.neon-player{color:var(--player);text-shadow:var(--glow-player)}
+.neon-gold{color:var(--gold);text-shadow:var(--glow-gold)}
+.neon-green{color:var(--green);text-shadow:var(--glow-green)}
+.neon-p{color:var(--purple);text-shadow:var(--glow-purple)}
+.neon-c{color:var(--player);text-shadow:var(--glow-player)}
+.neon-y{color:var(--gold);text-shadow:var(--glow-gold)}
+.neon-g{color:var(--green);text-shadow:var(--glow-green)}
+.neon-r{color:var(--red);text-shadow:var(--glow-red)}
+
+/* ── CARDS ── */
+.card{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:18px;margin-bottom:12px;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.022) 0%,transparent 55%);pointer-events:none;border-radius:inherit}
+.card-host{border-color:rgba(249,115,22,.32);box-shadow:0 0 0 1px rgba(249,115,22,.08),inset 0 1px 0 rgba(249,115,22,.05)}
+.card-player{border-color:rgba(34,211,238,.28);box-shadow:0 0 0 1px rgba(34,211,238,.08),inset 0 1px 0 rgba(34,211,238,.05)}
+.card-gold{border-color:rgba(252,211,77,.32);box-shadow:0 0 0 1px rgba(252,211,77,.08),inset 0 1px 0 rgba(252,211,77,.05)}
+.card-green{border-color:rgba(74,222,128,.32);box-shadow:var(--glow-green)}
+.card-red{border-color:rgba(248,113,113,.32);box-shadow:var(--glow-red)}
+.card-glow{box-shadow:var(--glow-purple)}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 20px;border:none;border-radius:10px;font-family:'Nunito',sans-serif;font-size:.8rem;font-weight:800;text-transform:uppercase;letter-spacing:.9px;cursor:pointer;transition:all .12s ease;user-select:none;-webkit-user-select:none;position:relative;overflow:hidden}
+.btn::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.1) 0%,transparent 60%);pointer-events:none}
+.btn:active{transform:scale(.95)}
+.btn:disabled{opacity:.32;cursor:not-allowed;transform:none!important}
+.btn-host{background:var(--host);color:#000;box-shadow:var(--glow-host)}
+.btn-host:hover{filter:brightness(1.1)}
+.btn-player{background:var(--player);color:#000;box-shadow:var(--glow-player)}
+.btn-player:hover{filter:brightness(1.1)}
+.btn-gold{background:var(--gold);color:#000;box-shadow:var(--glow-gold)}
+.btn-gold:hover{filter:brightness(1.08)}
+.btn-green{background:var(--green);color:#000;box-shadow:var(--glow-green)}
+.btn-red{background:var(--red);color:#fff;box-shadow:var(--glow-red)}
+.btn-outline{background:transparent;color:var(--tx3);border:1.5px solid var(--border2)}
+.btn-outline:hover{border-color:var(--player);color:var(--player)}
+.btn-ghost{background:rgba(255,255,255,.035);color:var(--tx2);border:1px solid var(--border2)}
+.btn-ghost:hover{background:rgba(255,255,255,.065);color:var(--tx)}
+.btn-danger{background:transparent;color:var(--red);border:1.5px solid rgba(248,113,113,.32)}
+.btn-danger:hover{background:rgba(248,113,113,.1)}
+/* Legacy aliases */
+.btn-p{background:var(--purple);color:#fff;box-shadow:var(--glow-purple)}
+.btn-p:hover{filter:brightness(1.1)}
+.btn-c{background:transparent;color:var(--player);border:1.5px solid var(--player);box-shadow:var(--glow-player)}
+.btn-c:hover{background:rgba(34,211,238,.1)}
+.btn-g{background:var(--green);color:#000}
+.btn-g:hover{filter:brightness(1.1)}
+.btn-r{background:var(--red);color:#fff}
+.btn-y{background:var(--gold);color:#000;box-shadow:var(--glow-gold)}
+.btn-y:hover{filter:brightness(1.08)}
+.btn-lg{padding:14px 22px;font-size:.88rem}
+.btn-sm{padding:7px 13px;font-size:.7rem}
+.btn-full{width:100%}
+
+/* ── INPUTS ── */
+input[type=text]{background:var(--bg3);border:1.5px solid var(--border2);border-radius:10px;padding:12px 16px;color:var(--tx);font-family:'Nunito',sans-serif;font-size:1rem;font-weight:600;width:100%;outline:none;transition:border-color .2s,box-shadow .2s}
+input[type=text]:focus{border-color:var(--player);box-shadow:0 0 0 3px rgba(34,211,238,.14)}
+input[type=text].inp-host:focus{border-color:var(--host);box-shadow:0 0 0 3px rgba(249,115,22,.14)}
+input[type=text].inp-p:focus{border-color:var(--purple);box-shadow:var(--glow-purple)}
+
+/* ── SEGMENTED CONTROL ── */
+.seg{display:flex;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;overflow:hidden;flex-wrap:wrap}
+.seg-btn{flex:1;min-width:0;padding:10px 4px;background:transparent;border:none;color:var(--tx2);font-family:'Nunito',sans-serif;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.seg-btn:hover:not(.active){background:rgba(255,255,255,.04);color:var(--tx3)}
+.seg-btn.active{background:var(--player);color:#000}
+
+/* ── PROGRESS BARS ── */
+.prog-bar{height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--player));transition:width .1s linear;border-radius:3px}
+.prog-fill.urgent{background:linear-gradient(90deg,var(--red),#FF8080)}
+
+/* Full-width timer bar */
+.timer-bar-wrap{height:6px;background:rgba(255,255,255,.055);border-radius:3px;overflow:hidden;margin-bottom:14px}
+.timer-bar-fill{height:100%;border-radius:3px;transition:width .1s linear}
+.timer-bar-green{background:linear-gradient(90deg,var(--green),#86EFAC)}
+.timer-bar-yellow{background:linear-gradient(90deg,var(--gold),#FDE68A)}
+.timer-bar-red{background:linear-gradient(90deg,var(--red),#FCA5A5)}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:.64rem;font-weight:800;text-transform:uppercase;letter-spacing:.8px}
+.badge-host{background:rgba(249,115,22,.18);color:var(--host)}
+.badge-player{background:rgba(34,211,238,.18);color:var(--player)}
+.badge-gold{background:rgba(252,211,77,.18);color:var(--gold)}
+.badge-green{background:rgba(74,222,128,.18);color:var(--green)}
+.badge-red{background:rgba(248,113,113,.18);color:var(--red)}
+.badge-purple{background:rgba(192,132,252,.18);color:var(--purple)}
+.badge-dim{background:rgba(255,255,255,.06);color:var(--tx3)}
+/* Legacy */
+.badge-p{background:rgba(192,132,252,.18);color:var(--purple)}
+.badge-c{background:rgba(34,211,238,.18);color:var(--player)}
+.badge-y{background:rgba(252,211,77,.18);color:var(--gold)}
+.badge-r{background:rgba(248,113,113,.18);color:var(--red)}
+.badge-g{background:rgba(74,222,128,.18);color:var(--green)}
+
+/* ── VINYL ── */
+.vinyl{width:64px;height:64px;border-radius:50%;background:conic-gradient(#14122A 0 33%,#1E1C38 33% 66%,#14122A 66%);border:3px solid #2A2848;position:relative;flex-shrink:0}
+.vinyl::before{content:'';position:absolute;inset:50%;transform:translate(-50%,-50%);width:20px;height:20px;background:radial-gradient(circle,#3D3A60 40%,#1E1C38 40%);border-radius:50%}
+.vinyl.spin{animation:spin 2s linear infinite}
+
+/* ── CHOICE BUTTONS ── */
+.choices-grid{display:grid;grid-template-columns:1fr!important;gap:10px;margin-top:14px}
+.choice-btn{padding:17px 18px;background:var(--bg3);border:2px solid var(--border2);border-radius:12px;color:var(--tx);font-family:'Nunito',sans-serif;font-size:.92rem;font-weight:700;cursor:pointer;transition:all .12s;text-align:left;word-break:break-word;display:flex;align-items:center;gap:10px;user-select:none}
+.choice-btn:hover:not(:disabled):not(.locked){border-color:var(--player);background:rgba(34,211,238,.075);color:var(--player);transform:translateY(-1px);box-shadow:0 4px 18px rgba(34,211,238,.18)}
+.choice-btn:active:not(:disabled):not(.locked){transform:scale(.98)}
+.choice-btn.correct{border-color:var(--green);background:rgba(74,222,128,.1);color:var(--green);box-shadow:var(--glow-green)}
+.choice-btn.wrong{border-color:var(--red);background:rgba(248,113,113,.07);color:var(--red)}
+.choice-btn.locked{cursor:default}
+.choice-key{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;background:rgba(255,255,255,.08);border-radius:6px;font-size:.72rem;font-weight:800;flex-shrink:0;font-family:'Space Mono',monospace}
+
+/* ── PLAYER DOT ── */
+.player-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:800;flex-shrink:0;font-family:'Barlow Condensed',sans-serif;letter-spacing:0}
+
+/* ── PLAYER ROWS ── */
+.player-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--bg3);border:1px solid var(--border);transition:border-color .2s,background .2s;margin-bottom:6px}
+.player-row:last-child{margin-bottom:0}
+.player-row.waiting{}
+.player-row.answered-ok{border-color:rgba(74,222,128,.35);background:rgba(74,222,128,.05)}
+.player-row.answered-wrong{border-color:rgba(248,113,113,.28);background:rgba(248,113,113,.04)}
+.player-row.revealed-ok{border-color:rgba(74,222,128,.4);background:rgba(74,222,128,.07);animation:slideUp .3s ease-out}
+.player-row.revealed-wrong{border-color:rgba(248,113,113,.3)}
+
+/* ── HOST ROOM CODE ── */
+.room-code{font-family:'Barlow Condensed','Impact',sans-serif;font-weight:900;font-size:clamp(2.8rem,13vw,4.5rem);letter-spacing:clamp(6px,4vw,14px);color:var(--host);text-shadow:var(--glow-host);text-align:center;padding:16px 0 8px;cursor:pointer;transition:opacity .15s;word-break:break-all}
+
+/* ── SCORE DISPLAY ── */
+.score-num{font-family:'Space Mono','Courier New',monospace;font-weight:700}
+.score-delta{font-family:'Space Mono',monospace;font-size:.7rem;font-weight:700;color:var(--green);animation:slideUp .4s ease-out}
+.multi-score-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:.7rem;font-weight:700;background:var(--bg3);border:1px solid var(--border2)}
+
+/* ── REACTIONS ── */
+.reaction-float{position:fixed;font-size:1.8rem;pointer-events:none;z-index:300;animation:floatUp 1.4s ease-out forwards}
+.reaction-bar{display:flex;justify-content:center;gap:8px;margin-top:12px;flex-wrap:wrap}
+.reaction-btn{font-size:1.3rem;background:var(--bg3);border:1px solid var(--border2);border-radius:50%;width:42px;height:42px;cursor:pointer;transition:transform .1s,border-color .15s,background .15s;display:flex;align-items:center;justify-content:center}
+.reaction-btn:hover{border-color:var(--player);background:rgba(34,211,238,.1)}
+.reaction-btn:active{transform:scale(.75)}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--green);border-radius:10px;padding:10px 22px;color:var(--green);font-size:.78rem;font-weight:800;z-index:400;white-space:nowrap;pointer-events:none;animation:toastIn .2s ease-out;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
+
+/* ── CONNECTION DOT ── */
+.conn-dot{width:8px;height:8px;border-radius:50%;background:var(--tx2);flex-shrink:0;transition:background .3s;display:inline-block}
+.conn-dot.connected{background:var(--green);box-shadow:0 0 8px rgba(74,222,128,.7)}
+.conn-dot.connecting{background:var(--gold);animation:pulse 1s ease-in-out infinite}
+.conn-dot.failed{background:var(--red);box-shadow:0 0 8px rgba(248,113,113,.6)}
+
+/* ── TIMER WIDGET ── */
+.timer-wrap{position:relative;width:70px;height:70px;flex-shrink:0}
+.timer-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:1rem;font-weight:700;color:var(--player)}
+.timer-text.urgent{color:var(--red);animation:blink .5s ease-in-out infinite}
+.timer-countdown{font-family:'Space Mono',monospace;font-size:1.6rem;color:var(--player);text-shadow:var(--glow-player);min-width:44px;text-align:right;transition:color .3s}
+.timer-countdown.urgent{color:var(--red);text-shadow:var(--glow-red);animation:pulse .5s ease-in-out infinite}
+.prog-fill.urgent{background:linear-gradient(90deg,var(--red),#ff6b6b)}
+
+/* ── FEEDBACK OVERLAY ── */
+.feedback-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:200}
+.feedback-txt{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:clamp(3rem,10vw,6rem);letter-spacing:4px;text-transform:uppercase;animation:pop .5s ease-out forwards;text-shadow:0 0 40px currentColor}
+
+/* ── WAITING ── */
+.waiting-pulse{animation:pulse 1.5s ease-in-out infinite}
+
+/* ── REVEAL BANNER ── */
+.reveal-banner{background:rgba(74,222,128,.09);border:1.5px solid var(--green);border-radius:12px;padding:14px 18px;color:var(--green);font-size:.92rem;margin-top:10px;animation:pop .3s ease-out;box-shadow:var(--glow-green)}
+
+/* ── VOLUME ── */
+.volume-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.volume-slider{flex:1;height:4px;-webkit-appearance:none;appearance:none;background:var(--bg3);border-radius:2px;outline:none;cursor:pointer}
+.volume-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--player);cursor:pointer;box-shadow:0 0 6px rgba(34,211,238,.6)}
+.volume-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--player);border:none;cursor:pointer}
+
+/* ── HOST GAME EXTRAS ── */
+.round-track{display:flex;align-items:center;gap:3px;flex-wrap:wrap;margin-bottom:10px}
+.round-pip{width:7px;height:7px;border-radius:50%;background:var(--bg4);border:1px solid var(--border2);flex-shrink:0;transition:background .3s}
+.round-pip.done{background:var(--tx2)}
+.round-pip.current{background:var(--player);box-shadow:0 0 7px rgba(34,211,238,.65)}
+.host-reveal-btn{animation:pulse-border 1.5s ease-in-out infinite}
+
+/* ── PLAYER GAME EXTRAS ── */
+.my-score-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:8px 14px;background:var(--bg3);border-radius:10px;border:1px solid var(--border2)}
+.combo-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:.65rem;font-weight:800;letter-spacing:.8px;text-transform:uppercase;background:rgba(252,211,77,.18);color:var(--gold);border:1px solid rgba(252,211,77,.25);animation:pulse 1s ease-in-out infinite}
+
+/* ── DIVIDER ── */
+.divider{border:none;border-top:1px solid var(--border);margin:14px 0}
+
+/* ── UTILITIES ── */
+.flex{display:flex}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-2{gap:8px}.gap-3{gap:12px}.gap-4{gap:16px}.flex-1{flex:1}.flex-wrap{flex-wrap:wrap}.w-full{width:100%}.text-center{text-align:center}
+.mb-1{margin-bottom:4px}.mb-2{margin-bottom:8px}.mb-3{margin-bottom:12px}.mb-4{margin-bottom:16px}.mb-6{margin-bottom:24px}.mt-2{margin-top:8px}.mt-3{margin-top:12px}.mt-4{margin-top:16px}
+.text-sm{font-size:.82rem}.text-xs{font-size:.72rem}.text-dim{color:var(--tx2)}.bold{font-weight:700}.truncate{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:rgba(34,211,238,.3);border-radius:2px}
+
+/* ── REDUCED MOTION ── */
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+</style>
+</head>
+<body>
+<div id="layout">
+  <nav id="sidebar">
+    <div class="sidebar-logo"></div>
+    <div class="sidebar-nav" id="sidebar-nav"></div>
+    <div class="sidebar-footer" id="sidebar-footer"></div>
+  </nav>
+  <div id="main-content">
+    <div id="app"></div>
+  </div>
+</div>
+<nav id="bottom-nav"><div class="bnav-items" id="bnav-items"></div></nav>
+<div id="feedback-layer" class="feedback-overlay" style="display:none"></div>
+<!-- Chargement -->
+<div id="loading-overlay" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(6,6,15,.95);backdrop-filter:blur(10px);flex-direction:column;align-items:center;justify-content:center;gap:16px">
+  <div style="width:54px;height:54px;border:3px solid rgba(34,211,238,.18);border-top-color:var(--player);border-radius:50%;animation:spin 1s linear infinite"></div>
+  <p id="loading-text" style="color:var(--tx);font-size:.95rem;font-weight:800;text-align:center;padding:0 28px;letter-spacing:.5px"></p>
+  <p style="color:var(--tx2);font-size:.7rem;opacity:.6">Ne quitte pas cette page…</p>
+</div>
+<!-- Bannière réseau -->
+<div id="net-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:8000;padding:8px 16px;text-align:center;font-size:.75rem;font-weight:800;letter-spacing:.5px;background:rgba(248,113,113,.18);border-bottom:1px solid rgba(248,113,113,.4);color:var(--red);backdrop-filter:blur(4px)">⚠️ Connexion perdue — reconnexion en cours…</div>
+
+<script>
+const BT_DIFF = {
+  facile:    { dur:30, replays:3, pts:100, speedPts:50,  label:'Facile',        icon:'🟢', hint:'30s • 3 réécoutes' },
+  inter:     { dur:20, replays:2, pts:200, speedPts:100, label:'Intermédiaire', icon:'🟡', hint:'20s • 2 réécoutes' },
+  difficile: { dur:10, replays:1, pts:300, speedPts:150, label:'Difficile',     icon:'🟠', hint:'10s • 1 réécoute' },
+  hard:      { dur:5,  replays:0, pts:500, speedPts:250, label:'HARD',          icon:'🔴', hint:'5s • 0 réécoute' },
+};
+
+// ── CALCUL DES POINTS ──────────────────────────────────────────
+// Bonus vitesse : linéaire (pas de paliers — plus c'est rapide, plus c'est récompensé)
+// Bonus combo : 3+ = +15%, 5+ = +30%, 8+ = +50% de la base
+function calcPoints(diffKey, elapsed, totalDur, streakAfter, hintShown, isQCM = false) {
+  const d = BT_DIFF[diffKey];
+  const base = d.pts;
+
+  // Bonus vitesse — parfaitement linéaire, de 0 (réponse au dernier moment) à speedPts (instantané)
+  let speed = 0;
+  if (totalDur > 0 && totalDur < 9000 && elapsed >= 0) {
+    const ratio = Math.max(0, 1 - elapsed / totalDur);
+    speed = Math.round(d.speedPts * ratio);
+  }
+
+  // Bonus combo — simple : 3 / 5 / 8 bonnes d'affilée
+  let streak = 0;
+  if      (streakAfter >= 8) streak = Math.round(base * 0.5);
+  else if (streakAfter >= 5) streak = Math.round(base * 0.3);
+  else if (streakAfter >= 3) streak = Math.round(base * 0.15);
+
+  const total = Math.max(1, base + speed + streak);
+  return { total, base, speed, streak, hint: 0 };
+}
+
+// ── BONUS DE FIN DE PARTIE ────────────────────────────────────
+// 5 catégories qui peuvent renverser le classement jusqu'à la dernière note
+function calcFinalBonuses(state) {
+  const players = Object.keys(state.scores);
+  if (players.length === 0) return { bonuses: [], byPlayer: {} };
+  const nRounds = state.queue ? state.queue.length : 1;
+  const base = BT_DIFF[state.diff]?.pts || 100;
+  const bonuses = []; // { player, emoji, label, sub, pts }
+  const byPlayer = {};
+  players.forEach(p => byPlayer[p] = 0);
+
+  // ⚡ RÉFLEXE — temps de réponse moyen le plus bas (sur les bonnes réponses seulement)
+  const correctTimes = state.correctResponseTimes || {};
+  const avgTimes = {};
+  players.forEach(p => {
+    const times = correctTimes[p] || [];
+    if (times.length > 0) avgTimes[p] = times.reduce((a,b) => a+b, 0) / times.length;
+  });
+  const timeCandidates = players.filter(p => avgTimes[p] !== undefined);
+  if (timeCandidates.length > 0) {
+    timeCandidates.sort((a,b) => avgTimes[a] - avgTimes[b]);
+    const fastest = timeCandidates[0];
+    const pts = Math.round(base * Math.max(nRounds * 0.25, 3));
+    bonuses.push({ player: fastest, emoji: '⚡', label: 'RÉFLEXE', sub: `Temps moyen : ${(avgTimes[fastest]/1000).toFixed(2)}s`, pts });
+    byPlayer[fastest] += pts;
+  }
+
+  // 🔥 COMBO — plus longue série de bonnes réponses (≥ 3)
+  const maxStreaks = state.maxStreaks || {};
+  const comboLeader = players.reduce((best, p) => (maxStreaks[p]||0) > (maxStreaks[best]||0) ? p : best, players[0]);
+  const comboVal = maxStreaks[comboLeader] || 0;
+  if (comboVal >= 3) {
+    const pts = Math.round(base * comboVal * 0.4);
+    bonuses.push({ player: comboLeader, emoji: '🔥', label: 'COMBO', sub: `Série de ${comboVal} bonnes réponses de suite`, pts });
+    byPlayer[comboLeader] += pts;
+  }
+
+  // 🎯 LAST CALL — bonne réponse sur la dernière musique (bonus plus grand si seul)
+  const lastCorrect = players.filter(p => state.lastRoundCorrect?.[p]);
+  if (lastCorrect.length > 0 && lastCorrect.length < players.length) {
+    const pts = Math.round(base * (lastCorrect.length === 1 ? 2.5 : 1.5));
+    lastCorrect.forEach(p => {
+      bonuses.push({ player: p, emoji: '🎯', label: 'LAST CALL', sub: lastCorrect.length === 1 ? 'Seul à répondre juste sur la dernière !' : 'Bonne réponse sur la dernière musique', pts });
+      byPlayer[p] += pts;
+    });
+  }
+
+  // 💯 PARFAIT — toutes les réponses correctes
+  const correctCount = state.correctCount || {};
+  players.forEach(p => {
+    if ((correctCount[p] || 0) >= nRounds && nRounds > 0) {
+      const pts = Math.round(base * nRounds * 0.4);
+      bonuses.push({ player: p, emoji: '💯', label: 'PARFAIT', sub: `${nRounds}/${nRounds} — sans une seule erreur !`, pts });
+      byPlayer[p] += pts;
+    }
+  });
+
+  // 📈 REMONTADA — était dans la moitié basse à mi-parcours, finit dans la moitié haute
+  if (state.halfTimeScores && players.length >= 2) {
+    const halfRanked = [...players].sort((a,b) => (state.halfTimeScores[b]||0) - (state.halfTimeScores[a]||0));
+    const finalRanked = [...players].sort((a,b) => (state.scores[b]||0) - (state.scores[a]||0));
+    const midPt = Math.ceil(players.length / 2);
+    players.forEach(p => {
+      const halfPos = halfRanked.indexOf(p);
+      const finalPos = finalRanked.indexOf(p);
+      if (halfPos >= midPt && finalPos < midPt) {
+        const pts = Math.round(base * nRounds * 0.2);
+        bonuses.push({ player: p, emoji: '📈', label: 'REMONTADA', sub: `De la ${halfPos+1}e place à la ${finalPos+1}e !`, pts });
+        byPlayer[p] += pts;
+      }
+    });
+  }
+
+  return { bonuses, byPlayer };
+}
+
+const PARTY_COLORS=['#8b5cf6','#06b6d4','#fbbf24','#22c55e','#ef4444','#f97316','#ec4899','#94a3b8'];
+
+let S = {
+  screen: 'home',
+  songs: [],
+  musicCardOpen: false,
+
+  btCfg: { diff:'facile', start:'debut', field:'title', rounds:9999, selectedArtists:[], gameType:'bt' },
+
+};
+
+let _audio = null, _uiTimer = null;
+let _volume = 1; // Volume global 0-1
+
+let _activeKeyHandler = null;
+function setKeyHandler(fn) {
+  if (_activeKeyHandler) document.removeEventListener('keydown', _activeKeyHandler);
+  _activeKeyHandler = fn || null;
+  if (_activeKeyHandler) document.addEventListener('keydown', _activeKeyHandler);
+}
+function clearKeyHandler() { setKeyHandler(null); }
+
+let _idbInstance = null;
+function openIDB() {
+  if (_idbInstance) return Promise.resolve(_idbInstance);
+  return new Promise((res, rej) => {
+    const req = indexedDB.open('blindtest_v1', 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore('kv');
+    req.onsuccess = e => { _idbInstance = e.target.result; res(_idbInstance); };
+    req.onerror = () => rej(req.error);
+  });
+}
+async function idbSet(key, val) {
+  try {
+    const db = await openIDB();
+    return new Promise((res, rej) => {
+      const tx = db.transaction('kv', 'readwrite');
+      tx.objectStore('kv').put(val, key);
+      tx.oncomplete = res;
+      tx.onerror = () => rej(tx.error);
+    });
+  } catch(e) { console.warn('IDB set error:', e); }
+}
+async function idbGet(key) {
+  try {
+    const db = await openIDB();
+    return new Promise((res, rej) => {
+      const tx = db.transaction('kv', 'readonly');
+      const req = tx.objectStore('kv').get(key);
+      req.onsuccess = () => res(req.result);
+      req.onerror = () => rej(req.error);
+    });
+  } catch(e) { return null; }
+}
+
+let _musicDirHandle = null;
+const FS_SUPPORTED = typeof window.showDirectoryPicker === 'function';
+const ARCHIVE_ID = 'blind-test-huhu'; // ← changer ici si tu changes d'item Archive.org
+
+async function saveServerDataToIDB() {
+  try {
+    const serverSongs = S.songs.filter(s => !s.file).map(s => ({ name: s.name, url: s.url, artist: s.artist, title: s.title }));
+    await idbSet('server_songs', JSON.stringify(serverSongs));
+  } catch(e) { console.warn('IDB save error:', e); }
+}
+
+async function restoreServerDataFromIDB() {
+  try {
+    const songs = await idbGet('server_songs');
+    if (songs) {
+      const arr = JSON.parse(songs);
+      if (arr.length) {
+        const existingUrls = new Set(S.songs.map(s => s.url));
+        arr.forEach(s => { if (!existingUrls.has(s.url)) S.songs.push({ file: null, ...s }); });
+      }
+    }
+  } catch(e) {}
+}
+
+async function tryRestoreHandles() {
+  await restoreServerDataFromIDB();
+
+  if (!FS_SUPPORTED) return;
+  try {
+    const mh = await idbGet('musicDir');
+    if (mh) {
+      _musicDirHandle = mh;
+      const perm = await mh.queryPermission({ mode: 'read' });
+      if (perm === 'granted') await loadFilesFromDir(mh, 'audio');
+    }
+  } catch(e) {}
+}
+
+
+async function pickMusicFolder() {
+  if (!FS_SUPPORTED) { document.getElementById('audio-input').click(); return; }
+  try {
+    _musicDirHandle = await window.showDirectoryPicker({ mode:'read' });
+    await idbSet('musicDir', _musicDirHandle);
+    await loadFilesFromDir(_musicDirHandle, 'audio');
+  } catch(e) { if (e.name !== 'AbortError') console.warn(e); }
+}
+
+
+// ── CHARGEMENT ARCHIVE.ORG ────────────────────────────────────
+async function loadFromArchive(retryCount = 0) {
+  showLoadingOverlay('⬇️ Chargement depuis Archive.org…');
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+    const res = await fetch(`https://archive.org/metadata/${ARCHIVE_ID}/files`, { signal: controller.signal });
+    clearTimeout(timeout);
+    if (!res.ok) throw new Error('Réponse HTTP ' + res.status);
+    const data = await res.json();
+    const mp3s = (data.result || []).filter(f => /\.mp3$/i.test(f.name));
+    if (!mp3s.length) throw new Error('Aucun MP3 trouvé dans l\'item Archive.org');
+    S.songs = S.songs.filter(s => s.file !== null);
+    mp3s.forEach(f => {
+      const { artist, title } = parseName(f.name);
+      S.songs.push({
+        file: null,
+        name: f.name,
+        url: `https://archive.org/download/${ARCHIVE_ID}/${encodeURIComponent(f.name)}`,
+        artist, title
+      });
+    });
+    await saveServerDataToIDB();
+    S.musicCardOpen = false;
+    hideLoadingOverlay();
+    render();
+    showToast(`✅ ${mp3s.length} musiques chargées !`, 3000);
+  } catch(e) {
+    hideLoadingOverlay();
+    if (retryCount < 2) {
+      showToast(`⚠️ Erreur réseau — nouvelle tentative (${retryCount + 1}/2)…`, 3500);
+      setTimeout(() => loadFromArchive(retryCount + 1), 3500);
+    } else {
+      showToast('❌ Archive.org inaccessible. Vérifie ta connexion.', 5000);
+      render();
+    }
+  }
+}
+window.loadFromArchive = loadFromArchive;
+
+
+
+async function loadFilesFromDir(dirHandle, type) {
+  const files = [];
+  for await (const entry of dirHandle.values()) {
+    if (entry.kind === 'file') {
+      try { files.push(await entry.getFile()); } catch(e) {}
+    }
+  }
+  handleAudioFiles(files);
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// IDENTITÉ JOUEUR — ID unique + pseudo
+// ═══════════════════════════════════════════════════════════════
+function getUserId() {
+  let id;
+  try { id = localStorage.getItem('bt_user_id'); } catch(e) {}
+  if (!id) {
+    id = 'u_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9);
+    try { localStorage.setItem('bt_user_id', id); } catch(e) {}
+  }
+  return id;
+}
+function getUserPseudo() {
+  try { return localStorage.getItem('bt_user_pseudo') || ''; } catch(e) { return ''; }
+}
+function setUserPseudo(pseudo) {
+  if (!pseudo || !pseudo.trim()) return;
+  const trimmed = pseudo.trim().slice(0, 20);
+  try { localStorage.setItem('bt_user_pseudo', trimmed); } catch(e) {}
+
+}
+
+
+// Modal de choix/modification de pseudo
+function showPseudoModal() {
+  const old = document.getElementById('_pseudo-modal');
+  if (old) old.remove();
+  const current = getUserPseudo();
+  const m = document.createElement('div');
+  m.id = '_pseudo-modal';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px';
+  m.innerHTML = `<div style="background:var(--bg2);border:1.5px solid var(--p);border-radius:16px;padding:28px 24px;max-width:360px;width:100%;text-align:center;box-shadow:var(--gp)">
+    <p style="font-size:2rem;margin-bottom:8px">👤</p>
+    <h2 class="neon-p" style="font-size:1.4rem;margin-bottom:6px">${current ? 'Modifier ton pseudo' : 'Choisis ton pseudo'}</h2>
+    <p class="text-xs text-dim mb-4" style="line-height:1.6">Il sera utilisé dans tous les classements.<br>Tu peux le changer à tout moment.</p>
+    <input type="text" id="_pseudo-input" maxlength="20" placeholder="Ton pseudo…"
+      value="${escHtml(current)}"
+      style="margin-bottom:14px;text-align:center;font-size:1.1rem"
+      autocomplete="off"
+      onkeydown="if(event.key==='Enter'){const v=this.value.trim();if(!v){this.style.borderColor='var(--r)';return;}setUserPseudo(v);document.getElementById('_pseudo-modal').remove();renderNav();showToast('✅ Pseudo : '+v);}">
+    <button class="btn btn-p btn-lg btn-full" onclick="
+      const v=document.getElementById('_pseudo-input').value.trim();
+      if(!v){document.getElementById('_pseudo-input').style.borderColor='var(--r)';return;}
+      setUserPseudo(v);
+      document.getElementById('_pseudo-modal').remove();
+      renderNav();
+      showToast('✅ Pseudo : '+v);
+    ">✅ Valider</button>
+    ${current ? `<button class="btn btn-ghost btn-sm btn-full mt-2" onclick="document.getElementById('_pseudo-modal').remove()">Annuler</button>` : ''}
+    <p class="text-xs text-dim mt-3" style="opacity:.5">ID : ${escHtml(getUserId().slice(0,16))}…</p>
+  </div>`;
+  document.body.appendChild(m);
+  setTimeout(() => { const inp = document.getElementById('_pseudo-input'); if (inp) { inp.focus(); inp.select(); } }, 60);
+}
+
+
+
+// ── CLASSEMENT EN LIGNE ────────────────────────────────────────
+function getOnlineLBUrl() {
+  try { return localStorage.getItem('bt_online_lb_url') || 'https://blind-test-huhu-default-rtdb.firebaseio.com'; } catch(e) { return ''; }
+}
+function setOnlineLBUrl(url) {
+  try { localStorage.setItem('bt_online_lb_url', (url || '').trim().replace(/\/+$/, '')); } catch(e) {}
+}
+
+async function pushScoreOnline(entry) {
+  const url = getOnlineLBUrl();
+  if (!url) return;
+  try {
+    await fetch(url + '/scores.json', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: entry.name, score: entry.score, total: entry.total, mode: entry.mode, diff: entry.diff, date: entry.date, userId: entry.userId || '', ts: Date.now() })
+    });
+  } catch(e) { console.warn('Classement en ligne :', e); }
+}
+
+async function fetchOnlineLB() {
+  const url = getOnlineLBUrl();
+  if (!url) return null;
+  try {
+    const res = await fetch(url + '/scores.json', { cache: 'no-store' });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data) return [];
+    return Object.values(data)
+      .filter(e => e && e.name && e.total > 0)
+      .sort((a, b) => b.score !== a.score ? b.score - a.score : (b.score/b.total) - (a.score/a.total))
+      .slice(0, 100);
+  } catch(e) { return null; }
+}
+
+let _onlineLBData = undefined;
+let _onlineLBLoading = false;
+let _lbAccState = {}; // état accordéon persistant pour la session
+
+function lbToggle(key) {
+  _lbAccState[key] = !_lbAccState[key];
+  if (S.screen === 'leaderboard') document.getElementById('app').innerHTML = renderLeaderboard();
+}
+
+async function loadOnlineLBAndRender() {
+  if (_onlineLBLoading) return;
+  _onlineLBLoading = true;
+  _onlineLBData = undefined;
+  if (S.screen === 'leaderboard') document.getElementById('app').innerHTML = renderLeaderboard();
+  _onlineLBData = await fetchOnlineLB();
+  _onlineLBLoading = false;
+  if (S.screen === 'leaderboard') document.getElementById('app').innerHTML = renderLeaderboard();
+}
+
+function autoSaveScore(name, score, total, mode, diff) {
+  if (score == null || total == null || !name) return;
+  const pseudo = name.trim().slice(0, 20) || 'Anonyme';
+  const entry = { name: pseudo, score, total, mode, diff, userId: getUserId(), date: new Date().toLocaleDateString('fr-FR') };
+  pushScoreOnline(entry);
+}
+
+
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER : Leaderboard
+// ═══════════════════════════════════════════════════════════════
+function renderLeaderboard() {
+  const onlineUrl = getOnlineLBUrl();
+  const header = `<div class="flex items-center gap-3 mb-4">
+    <button class="btn btn-ghost btn-sm" onclick="goto('home')">← Retour</button>
+    <h2 class="neon-gold">🏆 Classement</h2>
+  </div>`;
+  if (_onlineLBLoading || _onlineLBData === undefined) {
+    return `<div class="screen">${header}<div class="card" style="text-align:center;padding:32px">
+      <p class="text-dim text-sm">${_onlineLBLoading ? '⏳ Chargement…' : ''}</p>
+      ${!_onlineLBLoading ? '<button class="btn btn-player btn-full" onclick="loadOnlineLBAndRender()">🌐 Charger le classement</button>' : ''}
+    </div></div>`;
+  }
+  if (!_onlineLBData || !_onlineLBData.length) {
+    return `<div class="screen">${header}<div class="card" style="text-align:center;padding:32px">
+      <p class="text-dim text-sm mb-3">Aucun score en ligne.</p>
+      <button class="btn btn-ghost btn-sm" onclick="loadOnlineLBAndRender()">🔄 Actualiser</button>
+    </div></div>`;
+  }
+  const DIFF_ORDER = ['facile','inter','difficile','hard'];
+  const groups = {};
+  for (const e of _onlineLBData) {
+    const pts = BT_DIFF[e.diff]?.pts || 100;
+    const nq = Math.round(e.total / pts);
+    if (!nq || nq < 1) continue;
+    if (!groups[nq]) groups[nq] = {};
+    if (!groups[nq][e.diff]) groups[nq][e.diff] = [];
+    groups[nq][e.diff].push(e);
+  }
+  for (const nq of Object.keys(groups))
+    for (const diff of Object.keys(groups[nq]))
+      groups[nq][diff].sort((a,b) => b.score !== a.score ? b.score - a.score : (b.score/b.total)-(a.score/a.total));
+  const nqKeys = Object.keys(groups).map(Number).sort((a,b)=>a-b);
+  const cfgPanel = `<div id="fb-url-edit" style="display:none;margin-bottom:12px;padding:12px;border:1px solid var(--border2);border-radius:8px">
+    <p class="text-xs text-dim mb-2">URL Firebase :</p>
+    <input type="url" id="firebase-url-input" value="${escHtml(onlineUrl)}" style="width:100%;margin-bottom:8px">
+    <button class="btn btn-player btn-sm btn-full" onclick="setOnlineLBUrl(document.getElementById('firebase-url-input').value);loadOnlineLBAndRender()">✅ Enregistrer</button>
+  </div>`;
+  const topBar = `<div class="flex justify-between items-center mb-3">
+    <span class="text-xs text-dim">${_onlineLBData.length} scores</span>
+    <div class="flex gap-2">
+      <button class="btn btn-ghost btn-sm" onclick="loadOnlineLBAndRender()">🔄</button>
+      <button class="btn btn-ghost btn-sm" onclick="const el=document.getElementById('fb-url-edit');el.style.display=el.style.display==='none'?'block':'none'">⚙️</button>
+    </div>
+  </div>`;
+  const MEDAL = ['🥇','🥈','🥉'];
+  let acc = '';
+  for (const nq of nqKeys) {
+    const nqKey = 'nq_' + nq;
+    const nqOpen = !!_lbAccState[nqKey];
+    const nqCount = Object.values(groups[nq]).reduce((s,a) => s+a.length, 0);
+    acc += `<div style="margin-bottom:8px;border:1px solid var(--border2);border-radius:12px;overflow:hidden">
+      <button onclick="lbToggle('${nqKey}')" style="width:100%;display:flex;align-items:center;gap:10px;padding:13px 16px;background:var(--bg3);border:none;cursor:pointer;color:var(--tx);font-family:'Nunito',sans-serif;text-align:left">
+        <span style="font-size:.75rem;display:inline-block;transition:transform .15s;${nqOpen?'transform:rotate(90deg)':''}">▶</span>
+        <span class="display" style="font-size:1rem;letter-spacing:2px;color:var(--player);flex:1">${nq} QUESTIONS</span>
+        <span style="font-size:.7rem;color:var(--tx2)">${nqCount} scores</span>
+      </button>`;
+    if (nqOpen) {
+      acc += `<div style="padding:8px 8px 4px">`;
+      for (const diff of DIFF_ORDER) {
+        if (!groups[nq][diff]) continue;
+        const entries = groups[nq][diff];
+        const diffKey = nqKey + '_' + diff;
+        const diffOpen = !!_lbAccState[diffKey];
+        const d = BT_DIFF[diff] || {};
+        acc += `<div style="margin-bottom:6px;border:1px solid rgba(255,255,255,.06);border-radius:8px;overflow:hidden">
+          <button onclick="lbToggle('${diffKey}')" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 13px;background:rgba(255,255,255,.02);border:none;cursor:pointer;color:var(--tx);font-family:'Nunito',sans-serif;text-align:left">
+            <span style="font-size:.7rem;display:inline-block;transition:transform .15s;${diffOpen?'transform:rotate(90deg)':''}">▶</span>
+            <span style="font-size:.82rem;flex:1;font-weight:700">${d.icon||''} ${escHtml(d.label||diff)}</span>
+            <span style="font-size:.68rem;color:var(--tx2)">${entries.length} scores</span>
+            <span style="margin-left:12px;font-family:'Space Mono',monospace;font-size:.9rem;color:var(--gold)">${entries[0]?.score?.toLocaleString()||''}</span>
+          </button>`;
+        if (diffOpen) {
+          acc += `<div style="padding:4px 13px 10px">`;
+          for (let i = 0; i < entries.length; i++) {
+            const e = entries[i];
+            const pct = e.total > 0 ? Math.round((e.score/e.total)*100) : 0;
+            const medal = i < 3 ? MEDAL[i] : `<span style="font-family:'Space Mono',monospace;font-size:.8rem;color:var(--tx2)">#${i+1}</span>`;
+            acc += `<div class="flex items-center gap-2" style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+              <span style="min-width:26px;font-size:.95rem;text-align:center">${medal}</span>
+              <span class="bold flex-1 truncate" style="font-size:.88rem">${escHtml(e.name)}</span>
+              <span style="font-family:'Space Mono',monospace;font-size:1rem;color:var(--gold)">${e.score.toLocaleString()}</span>
+              <span class="text-xs text-dim" style="min-width:32px;text-align:right">${pct}%</span>
+            </div>`;
+          }
+          acc += `</div>`;
+        }
+        acc += `</div>`;
+      }
+      acc += `</div>`;
+    }
+    acc += `</div>`;
+  }
+  return `<div class="screen">${header}<div class="card mb-3">${topBar}${cfgPanel}</div>${acc}</div>`;
+}
+window.loadOnlineLBAndRender = loadOnlineLBAndRender;
+window.setOnlineLBUrl = setOnlineLBUrl;
+window.autoSaveScore = autoSaveScore;
+window.lbToggle = lbToggle;
+
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER : Setup (Accueil Multijoueur)
+// ═══════════════════════════════════════════════════════════════
+function renderMultiSetup() {
+  const hasSongs = S.songs.length > 0;
+  const musicOpen = !hasSongs || S.musicCardOpen;
+
+  const musicCardHtml = musicOpen
+    ? `<div class="card card-player mb-3">
+        <div class="flex items-center justify-between mb-3">
+          <h3 style="margin-bottom:0">🎵 Musiques</h3>
+          ${hasSongs ? `<button class="btn btn-ghost btn-sm" onclick="S.musicCardOpen=false;render()">✕</button>` : ''}
+        </div>
+        <div id="server-status" class="text-xs mb-3" style="min-height:16px">
+          ${hasSongs
+            ? `<span style="color:var(--green)">✅ ${S.songs.length} chanson${S.songs.length>1?'s':''} prête${S.songs.length>1?'s':''}</span>`
+            : `<span style="color:var(--gold)">⚠️ Aucune chanson — charge depuis Archive.org ou un dossier</span>`}
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button id="archive-btn" class="btn btn-player btn-sm" onclick="loadFromArchive()" style="flex:1;min-width:130px">☁️ Archive.org</button>
+          <button class="btn btn-ghost btn-sm" onclick="pickMusicFolder()" style="flex:1;min-width:130px">📁 Dossier local</button>
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('json-import-input').click()" style="flex:1;min-width:130px">📋 Import JSON</button>
+          ${hasSongs ? `<button class="btn btn-danger btn-sm" onclick="S.songs=[];S.musicCardOpen=false;render()" style="flex:1;min-width:90px">🗑 Vider</button>` : ''}
+        </div>
+        <div class="text-xs" style="color:var(--tx2);margin-top:8px;opacity:.7">Format JSON : <code>[{"title":"…","artist":"…","url":"…"}]</code></div>
+        <input id="audio-input" type="file" accept="audio/*" multiple style="display:none" onchange="handleAudioFiles(this.files)">
+        <input id="json-import-input" type="file" accept=".json,application/json" style="display:none" onchange="importPlaylistJSON(this)">
+      </div>`
+    : `<div class="card mb-3" style="border-color:rgba(34,211,238,.2);padding:12px 16px">
+        <div class="flex items-center gap-3">
+          <span style="color:var(--green);flex:1;font-size:.85rem;font-weight:700">✅ ${S.songs.length} chanson${S.songs.length>1?'s':''} chargée${S.songs.length>1?'s':''}</span>
+          <button class="btn btn-ghost btn-sm" onclick="loadFromArchive()" title="Recharger Archive.org">🔄</button>
+          <button class="btn btn-ghost btn-sm" onclick="S.musicCardOpen=true;render()">✏️</button>
+        </div>
+        <input id="audio-input" type="file" accept="audio/*" multiple style="display:none" onchange="handleAudioFiles(this.files)">
+      </div>`;
+
+  return `<div class="screen">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <h1 style="font-size:clamp(1.5rem,6vw,2.5rem)">
+          <span class="neon-host">BLIND</span><span class="neon-player">TEST</span>
+        </h1>
+        <p class="text-xs" style="color:var(--tx2);letter-spacing:2px;margin-top:2px">MULTIJOUEUR EN LIGNE</p>
+      </div>
+      <span class="conn-dot multi-conn-dot" title="Déconnecté"></span>
+    </div>
+
+    <!-- Créer une salle -->
+    <div class="card card-host mb-3" style="padding:22px 20px">
+      <div class="flex items-center gap-3 mb-4">
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.3);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">🎮</div>
+        <div>
+          <p style="font-weight:800;font-size:.95rem">Créer une salle</p>
+          <p class="text-xs" style="color:var(--tx2)">Tu es l'hôte · tu contrôles tout</p>
+        </div>
+        <span class="badge badge-host" style="margin-left:auto">HÔTE</span>
+      </div>
+      <input type="text" id="multi-host-name" placeholder="Ton prénom…" maxlength="16" class="inp-host" style="margin-bottom:12px" value="${escHtml(S.hostName || getUserPseudo() || '')}">
+      <button class="btn btn-host btn-lg btn-full" onclick="
+        const n=document.getElementById('multi-host-name').value.trim();
+        if(!n){document.getElementById('multi-host-name').style.borderColor='var(--red)';return;}
+        S.hostName=n;goto('multi-host-settings');">
+        ➕ Créer une salle
+      </button>
+    </div>
+
+    <!-- Rejoindre une salle -->
+    <div class="card card-player mb-3" style="padding:22px 20px">
+      <div class="flex items-center gap-3 mb-4">
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.25);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">🎫</div>
+        <div>
+          <p style="font-weight:800;font-size:.95rem">Rejoindre une salle</p>
+          <p class="text-xs" style="color:var(--tx2)">Entre le code de l'hôte</p>
+        </div>
+        <span class="badge badge-player" style="margin-left:auto">JOUEUR</span>
+      </div>
+      <input type="text" id="multi-code" placeholder="Code"
+        maxlength="5"
+        style="text-transform:uppercase;text-align:center;font-family:'Space Mono',monospace;font-size:1.4rem;letter-spacing:8px;margin-bottom:10px"
+        oninput="this.value=this.value.toUpperCase()">
+      <input type="text" id="multi-name" placeholder="Ton prénom" maxlength="16" style="margin-bottom:12px" value="${escHtml(getUserPseudo() || '')}">
+      <button id="multi-join-btn" class="btn btn-player btn-full btn-lg"
+        onclick="multiJoinRoom(document.getElementById('multi-code').value,document.getElementById('multi-name').value)">
+        ▶ Rejoindre
+      </button>
+    </div>
+
+    ${musicCardHtml}
+  </div>`;
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER : Réglages hôte
+// ═══════════════════════════════════════════════════════════════
+function renderMultiHostSettings() {
+  const hasSongs = S.songs.length > 0;
+  const gameType = S.btCfg.gameType || 'bt';
+
+  const artistFilterHtml = gameType === 'bt' ? (()=>{
+    const artists = allArtists().sort((a,b)=>a.localeCompare(b));
+    if (artists.length === 0) return '';
+    const sel = S.btCfg.selectedArtists || [];
+    const isAll = sel.length === 0;
+    const selCount = isAll ? artists.length : sel.length;
+    return `<div style="margin-top:14px">
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-sm" style="font-weight:700">🎤 Artistes</span>
+        <span class="badge badge-player">${selCount} / ${artists.length}</span>
+      </div>
+      <div style="max-height:160px;overflow-y:auto;background:var(--bg3);border-radius:10px;padding:8px">
+        <label class="flex items-center gap-2 mb-2" style="cursor:pointer;padding:5px 6px;border-radius:6px">
+          <input type="checkbox" ${isAll?'checked':''} onchange="S.btCfg.selectedArtists=[];render()" style="accent-color:var(--player)">
+          <span class="text-sm bold">Tous les artistes</span>
+        </label>
+        ${artists.map(a => {
+          const checked = !isAll && sel.includes(a);
+          return `<label class="flex items-center gap-2" style="cursor:pointer;padding:5px 6px;border-radius:6px">
+            <input type="checkbox" ${checked?'checked':''} onchange="
+              const s=S.btCfg.selectedArtists||[];
+              const i=s.indexOf('${a.replace(/'/g,"\\'")}');
+              if(i>-1)s.splice(i,1);else s.push('${a.replace(/'/g,"\\'")}');
+              S.btCfg.selectedArtists=[...s];render()" style="accent-color:var(--player)">
+            <span class="text-sm">${escHtml(a)}</span>
+          </label>`;
+        }).join('')}
+      </div>
+    </div>`;
+  })() : '';
+
+  return `<div class="screen">
+    <div class="flex items-center gap-3 mb-4">
+      <button class="btn btn-ghost btn-sm" onclick="goto('multi-setup')">← Retour</button>
+      <h2><span class="neon-host">⚙️ Réglages</span></h2>
+    </div>
+
+    <div class="card card-host mb-3" style="padding:14px 18px">
+      <div class="flex items-center gap-3">
+        <div class="player-dot" style="background:var(--host);color:#000;width:38px;height:38px;font-size:.9rem">
+          ${escHtml((S.hostName||'H')[0].toUpperCase())}
+        </div>
+        <div>
+          <p class="text-xs" style="color:var(--tx2);letter-spacing:2px">HÔTE</p>
+          <p style="font-weight:800">${escHtml(S.hostName || 'Hôte')}</p>
+        </div>
+        <span class="badge badge-host" style="margin-left:auto">HÔTE</span>
+      </div>
+    </div>
+
+    <div class="card card-host mb-4">
+      <h3 style="margin-bottom:14px">⚙️ Paramètres de la partie</h3>
+
+      <div class="mb-4">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm" style="font-weight:700">🎯 Deviner</span>
+        </div>
+        <div class="seg">
+          <button class="seg-btn${(S.btCfg.field||'title')==='artist'?' active':''}" onclick="S.btCfg.field='artist';render()">🎤 Artiste</button>
+          <button class="seg-btn${(S.btCfg.field||'title')==='title'?' active':''}" onclick="S.btCfg.field='title';render()">🎵 Titre</button>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm" style="font-weight:700">⏱ Difficulté</span>
+          <span class="text-xs text-dim">${BT_DIFF[S.btCfg.diff||'facile'].hint}</span>
+        </div>
+        <div class="seg">
+          ${Object.entries(BT_DIFF).map(([k,v]) => {
+            const short = k==='inter'?'Inter':k==='difficile'?'Diff.':v.label;
+            return `<button class="seg-btn${(S.btCfg.diff||'facile')===k?' active':''}" onclick="S.btCfg.diff='${k}';render()">${v.icon} ${short}</button>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <div class="mb-2">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm" style="font-weight:700">🔢 Questions</span>
+        </div>
+        <div class="seg">
+          ${[10,20,50,['∞',9999]].map(v => {
+            const val = Array.isArray(v)?v[1]:v;
+            const lbl = Array.isArray(v)?v[0]:v;
+            return `<button class="seg-btn${(S.btCfg.rounds||20)===val?' active':''}" onclick="S.btCfg.rounds=${val};render()">${lbl}</button>`;
+          }).join('')}
+        </div>
+      </div>
+
+      ${artistFilterHtml}
+      <div class="divider"></div>
+      <p class="text-xs text-dim text-center">
+        ${hasSongs ? S.songs.length+' chansons disponibles' : '⚠️ Aucune chanson'}
+      </p>
+    </div>
+
+    <button id="multi-create-btn" class="btn btn-host btn-lg btn-full mb-3" onclick="multiCreateRoom()" ${!hasSongs?'disabled':''}>
+      🚀 Lancer la salle
+    </button>
+    ${!hasSongs ? `<p class="text-xs text-dim text-center">Charge des musiques depuis l'écran précédent</p>` : ''}
+  </div>`;
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER : Lobby (salle d'attente)
+// ═══════════════════════════════════════════════════════════════
+function renderMultiLobby() {
+  if (!_multi) return renderMultiSetup();
+  const isHost = _multi.role === 'host';
+
+  const playerListHtml = _multi.players.length
+    ? _multi.players.map((p,i) => `
+      <div class="player-row">
+        <span class="player-dot" style="background:${PARTY_COLORS[i%PARTY_COLORS.length]};color:#000">${escHtml(p.name[0].toUpperCase())}</span>
+        <span style="font-weight:700;font-size:.9rem;flex:1">${escHtml(p.name)}</span>
+        ${p.isHost ? `<span class="badge badge-host">Hôte</span>` : `<span class="badge badge-green">✓ Prêt</span>`}
+      </div>`).join('')
+    : `<p class="text-xs text-dim text-center" style="padding:20px 0">En attente de joueurs…</p>`;
+
+  if (isHost) return `<div class="screen">
+    <!-- Header hôte -->
+    <div class="flex items-center justify-between mb-4">
+      <button class="btn btn-ghost btn-sm" onclick="ablyDisconnect();goto('home')">✕ Fermer</button>
+      <div class="flex items-center gap-2">
+        <span class="badge badge-host">🎮 HÔTE</span>
+        <span class="conn-dot multi-conn-dot connected"></span>
+      </div>
+    </div>
+
+    <!-- Room code + QR -->
+    <div class="card card-host mb-3 text-center" style="padding:20px">
+      <p class="text-xs" style="color:var(--tx2);letter-spacing:3px;margin-bottom:4px">CODE DE LA SALLE</p>
+      <div class="room-code" onclick="copyRoomCode()" title="Cliquer pour copier">${_multi.roomCode}</div>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="copyRoomCode()">📋 Code</button>
+        <button class="btn btn-ghost btn-sm" onclick="copyJoinLink()">🔗 Lien</button>
+      </div>
+      <div style="margin-top:16px">
+        <p class="text-xs" style="color:var(--tx2);letter-spacing:2px;margin-bottom:10px">SCANNER POUR REJOINDRE</p>
+        <div id="qr-container" style="display:inline-block;background:#fff;padding:10px;border-radius:14px;box-shadow:0 0 28px rgba(249,115,22,.25)"></div>
+      </div>
+      <p class="text-xs text-dim mt-3">Ou : Multijoueur → Rejoindre → code <strong style="color:var(--host)">${_multi.roomCode}</strong></p>
+    </div>
+
+    <!-- Config résumé -->
+    <div class="card mb-3" style="padding:12px 16px">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="badge badge-player">🎵 Blind Test</span>
+        <span class="badge badge-dim">${BT_DIFF[_multi.diff]?.icon} ${BT_DIFF[_multi.diff]?.label}</span>
+        <span class="badge badge-gold">🔢 ${_multi.rounds >= 9999 ? '∞' : _multi.rounds} questions</span>
+        <span class="badge badge-dim">🎯 ${_multi.field === 'title' ? 'Titre' : 'Artiste'}</span>
+      </div>
+    </div>
+
+    <!-- Joueurs -->
+    <div class="card mb-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 style="margin-bottom:0">👥 Joueurs</h3>
+        <span class="badge badge-player">${_multi.players.length} connecté${_multi.players.length>1?'s':''}</span>
+      </div>
+      ${playerListHtml}
+    </div>
+
+    <div id="prefetch-status" style="display:none;align-items:center;gap:8px;font-size:.75rem;font-weight:700;padding:8px 12px;background:var(--bg3);border-radius:10px;border:1px solid var(--border2);margin-bottom:10px"></div>
+
+    <button class="btn btn-green btn-lg btn-full" onclick="multiHostStart()">🚀 Lancer la partie !</button>
+    ${_multi.players.filter(p=>!p.isHost).length === 0
+      ? `<p class="text-xs text-dim text-center mt-2">Aucun joueur connecté — tu joueras seul</p>`
+      : ''
+    }
+  </div>`;
+
+  // ── VUE JOUEUR ──
+  return `<div class="screen">
+    <div class="flex items-center justify-between mb-4">
+      <button class="btn btn-ghost btn-sm" onclick="ablyDisconnect();goto('home')">✕ Quitter</button>
+      <div class="flex items-center gap-2">
+        <span class="badge badge-player">🎫 Salle ${escHtml(_multi.roomCode)}</span>
+        <span class="conn-dot multi-conn-dot connected"></span>
+      </div>
+    </div>
+
+    <div class="card card-player mb-3" style="text-align:center;padding:32px 20px">
+      <div style="font-size:2.8rem;margin-bottom:12px" class="waiting-pulse">⏳</div>
+      <p style="font-weight:800;font-size:1.05rem;margin-bottom:6px">En attente de l'hôte…</p>
+      <p class="text-xs text-dim mb-4">La partie démarrera quand l'hôte appuiera sur Lancer</p>
+      <div style="display:inline-flex;align-items:center;gap:8px;padding:8px 20px;background:var(--bg3);border-radius:20px;border:1px solid rgba(34,211,238,.25)">
+        <span style="color:var(--player);font-size:1rem">👤</span>
+        <span style="font-weight:800;color:var(--player)">${escHtml(_multi.playerName)}</span>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="flex items-center justify-between mb-3">
+        <h3 style="margin-bottom:0">👥 Joueurs connectés</h3>
+        <span class="badge badge-player">${_multi.players.length}</span>
+      </div>
+      ${playerListHtml}
+    </div>
+  </div>`;
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER : Game (dispatch)
+// ═══════════════════════════════════════════════════════════════
+function renderMultiGame() {
+  if (!_multi) return renderMultiSetup();
+  return _multi.role === 'host' ? _renderMultiHostGame() : _renderMultiPlayerGame();
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER : Game Hôte
+// ═══════════════════════════════════════════════════════════════
+function _renderMultiHostGame() {
+  const song  = _multi.queue[_multi.round];
+  const diff  = BT_DIFF[_multi.diff];
+  const phase = _multi.phase;
+  const dur   = _multi.roundDur || diff.dur;
+  const nTotal = _multi.queue.length;
+  const answeredCount = _multi.players.filter(p => p.answered).length;
+  const totalPlayers  = _multi.players.length;
+
+  const remInit = phase === 'playing'
+    ? Math.max(0, dur - (Date.now() - _multi.roundStartTime) / 1000) : 0;
+  const remPct  = dur > 0 ? (remInit / dur * 100) : 0;
+
+  // Round progress pips (max 20 shown)
+  const maxPips = Math.min(nTotal, 20);
+  const pipsHtml = nTotal <= 20
+    ? `<div class="round-track">
+        ${Array.from({length:nTotal}, (_,i) =>
+          `<span class="round-pip${i<_multi.round?' done':i===_multi.round?' current':''}"></span>`
+        ).join('')}
+      </div>`
+    : `<div class="prog-bar mb-2" style="height:4px">
+        <div class="prog-fill" style="width:${(_multi.round/nTotal)*100}%"></div>
+      </div>`;
+
+  // Players rows
+  const playersHtml = _multi.players.map((p,i) => {
+    const col = PARTY_COLORS[i%PARTY_COLORS.length];
+    const hasAnswer = p.answered;
+    const isCorrect = hasAnswer && p.correct;
+    const isWrong = hasAnswer && p.correct === false;
+    const ans = _multi.answers[p.name];
+    const ansText = phase === 'answered' && ans ? `<span class="text-xs" style="color:var(--tx2);margin-left:4px">"${escHtml(ans)}"</span>` : '';
+    const rtArr = _multi.responseTimes?.[p.name];
+    const lastRt = rtArr && rtArr.length > 0 ? rtArr[rtArr.length-1] : null;
+    const rtLabel = lastRt != null && (phase === 'answered' || p.answered)
+      ? `<span style="font-size:.62rem;color:var(--green);margin-left:4px">⚡${(lastRt/1000).toFixed(1)}s</span>` : '';
+    const delta = phase === 'answered' && isCorrect && _multi.roundPts?.[p.name]
+      ? `<span class="score-delta" style="margin-left:4px">+${_multi.roundPts[p.name].total}</span>` : '';
+    const statusIcon = hasAnswer
+      ? (isCorrect ? '✅' : '❌')
+      : (phase === 'playing' ? '⌛' : '—');
+    const rowClass = phase === 'answered'
+      ? (isCorrect ? 'revealed-ok' : 'revealed-wrong')
+      : (hasAnswer ? (isCorrect ? 'answered-ok' : 'answered-wrong') : '');
+
+    return `<div class="player-row ${rowClass}">
+      <span class="player-dot" style="background:${col};color:#000;font-size:.75rem">${escHtml(p.name[0].toUpperCase())}</span>
+      <div style="flex:1;min-width:0">
+        <div class="flex items-center flex-wrap gap-1">
+          <span style="font-weight:800;font-size:.88rem">${escHtml(p.name)}</span>
+          ${ansText}${rtLabel}
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <span style="font-family:'Space Mono',monospace;font-size:.9rem;color:${col}">${(_multi.scores[p.name]||0).toLocaleString()}</span>
+        ${delta}
+      </div>
+      <span style="font-size:1rem;margin-left:4px;flex-shrink:0">${statusIcon}</span>
+    </div>`;
+  }).join('');
+
+  // ── Zone hôte selon phase ──
+  let gameZoneHtml = '';
+
+  if (phase === 'playing') {
+    const timerColor = remInit > dur*0.5 ? 'var(--green)' : remInit > dur*0.25 ? 'var(--gold)' : 'var(--red)';
+    const timerBarClass = remInit > dur*0.5 ? 'timer-bar-green' : remInit > dur*0.25 ? 'timer-bar-yellow' : 'timer-bar-red';
+    gameZoneHtml = `
+      <div class="timer-bar-wrap">
+        <div id="host-timer-bar" class="timer-bar-fill ${timerBarClass}" style="width:${remPct}%"></div>
+      </div>
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-3">
+          <div class="vinyl spin"></div>
+          <div>
+            <p style="font-weight:800;font-size:.88rem">🎵 En écoute…</p>
+            <p class="text-xs text-dim">
+              <span id="host-timer-txt">${Math.ceil(remInit)}s</span> restantes
+            </p>
+          </div>
+        </div>
+        <span class="badge ${answeredCount===totalPlayers?'badge-green':'badge-dim'}">${answeredCount}/${totalPlayers} ont répondu</span>
+      </div>
+      ${_multi.myAnswer !== null
+        ? `<div style="text-align:center;padding:10px 0;background:rgba(74,222,128,.07);border-radius:10px;border:1px solid rgba(74,222,128,.25);margin-bottom:10px">
+            <p style="font-size:1.4rem;margin-bottom:3px">✅</p>
+            <p class="text-xs" style="font-weight:800;color:var(--green)">Ta réponse : "${escHtml(_multi.myAnswer)}"</p>
+          </div>`
+        : `<div class="choices-grid" style="margin-bottom:10px">
+            ${(_multi.currentChoices||[]).map((c,ci) => `
+              <button class="choice-btn" onclick='multiHostAnswer(${JSON.stringify(c).replace(/'/g,"'")})'>
+                <span class="choice-key">${['A','B','C','D'][ci]||ci+1}</span>
+                ${escHtml(c)}
+              </button>`).join('')}
+          </div>`}
+      <button class="btn btn-red btn-full host-reveal-btn" onclick="multiHostReveal()">
+        🔍 Révéler maintenant
+      </button>`;
+
+  } else if (phase === 'answered') {
+    const ok2 = _multiCheckAnswer(_multi.myAnswer, song);
+    const hPts = (_multi.roundPts||{})[_multi.hostName];
+    const hStreak = (_multi.streaks||{})[_multi.hostName] || 0;
+    gameZoneHtml = `
+      <div class="reveal-banner mb-3">
+        <p class="text-xs" style="color:var(--green);letter-spacing:2px;margin-bottom:4px;opacity:.7">RÉPONSE CORRECTE</p>
+        <p style="font-weight:800;font-size:1rem">🎵 ${escHtml(song?.artist||'')} — <span style="color:var(--tx)">${escHtml(song?.title||'')}</span></p>
+      </div>
+      ${_multi.myAnswer !== null
+        ? `<p class="text-xs text-center mb-2" style="color:${ok2?'var(--green)':'var(--red)'}">
+            ${ok2
+              ? '🥳 Bonne réponse ! ' + (hStreak>=3?'🔥x'+hStreak+' · ':'') + '+' + (hPts?hPts.total:BT_DIFF[_multi.diff].pts) + ' pts'
+              : '😅 ' + escHtml(_multi.myAnswer||'')}
+           </p>
+           ${ok2 && hPts && (hPts.speed>0||hPts.streak>0) ? `<div style="display:flex;gap:5px;justify-content:center;flex-wrap:wrap;margin-bottom:10px">
+            ${hPts.speed>0?`<span class="badge badge-player" style="font-size:.6rem">🚀 Vitesse +${hPts.speed}</span>`:''}
+            ${hPts.streak>0?`<span class="badge badge-gold" style="font-size:.6rem">🔥 Combo +${hPts.streak}</span>`:''}
+           </div>`:''}`
+        : `<p class="text-xs text-dim text-center mb-2">Tu n'as pas répondu</p>`}
+      <button class="btn btn-host btn-lg btn-full" onclick="multiHostNext()">
+        ${_multi.round+1>=_multi.queue.length ? '🏆 Voir les résultats' : '⏭ Chanson suivante'}
+      </button>`;
+  }
+
+  return `<div class="screen">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-3">
+      <span class="badge badge-host">🎮 HÔTE</span>
+      <span class="display" style="font-size:.9rem;color:var(--tx3)">
+        ${_multi.round+1} / ${nTotal}
+      </span>
+      <span class="badge badge-dim">${diff.icon} ${diff.label}</span>
+    </div>
+
+    ${pipsHtml}
+
+    <!-- Zone principale -->
+    <div class="card card-host mb-3">
+      ${gameZoneHtml || ''}
+    </div>
+
+    <!-- Joueurs en temps réel -->
+    <div class="card mb-3">
+      <div class="flex items-center justify-between mb-3">
+        <h3 style="margin-bottom:0">👥 En direct</h3>
+        <span class="badge ${answeredCount===totalPlayers&&totalPlayers>0?'badge-green':'badge-dim'}">${answeredCount}/${totalPlayers}</span>
+      </div>
+      ${playersHtml || '<p class="text-xs text-dim">Aucun joueur</p>'}
+    </div>
+
+    ${phase==='answered' ? `
+    <div class="card" style="padding:14px 18px">
+      <h3 style="margin-bottom:10px">😂 Réactions</h3>
+      <div class="reaction-bar" style="justify-content:flex-start">
+        ${REACTION_EMOJIS.map(e=>`<button class="reaction-btn" onclick="sendReaction('${e}')">${e}</button>`).join('')}
+      </div>
+    </div>` : ''}
+  </div>`;
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER : Game Joueur
+// ═══════════════════════════════════════════════════════════════
+function _renderMultiPlayerGame() {
+  const phase    = _multi.phase;
+  const q        = _multi.currentQuestion;
+  const rev      = _multi.reveal;
+  const myAns    = _multi.myAnswer;
+  const myScore  = _multi.scores[_multi.playerName] || 0;
+  const diff     = BT_DIFF[_multi.diff || 'facile'];
+  const dur      = _multi.roundDur || diff.dur;
+  const myStreak = (_multi.streaks || {})[_multi.playerName] || 0;
+  const totalRounds = _multi.totalRounds || 0;
+  const currentRound = _multi.round + 1;
+
+  // Rank
+  const sortedScores = Object.entries(_multi.scores||{}).sort((a,b)=>b[1]-a[1]);
+  const myRank = sortedScores.findIndex(([n])=>n===_multi.playerName) + 1;
+
+  // Top scores strip
+  const topStrip = sortedScores.slice(0,5).map(([n,s],i) => {
+    const col = PARTY_COLORS[i%PARTY_COLORS.length];
+    const isMe = n === _multi.playerName;
+    return `<span class="score-chip" style="${isMe?'border-color:'+col+';color:'+col:''}">
+      ${isMe?'<span style="font-size:.7rem">👤</span>':''}
+      <span style="font-size:.72rem;font-weight:800">${escHtml(n)}</span>
+      <span style="font-family:\'Space Mono\',monospace;font-size:.7rem">${s.toLocaleString()}</span>
+    </span>`;
+  }).join('');
+
+  const headerHtml = `
+    <div class="my-score-bar">
+      <div>
+        <p class="text-xs" style="color:var(--tx2);letter-spacing:1px">TON SCORE</p>
+        <p style="font-family:'Space Mono',monospace;font-weight:700;font-size:1.1rem;color:var(--player)">${myScore.toLocaleString()}</p>
+      </div>
+      <div style="text-align:right">
+        <p class="text-xs" style="color:var(--tx2);letter-spacing:1px">MANCHE</p>
+        <p style="font-weight:800;font-size:1rem">${currentRound}${totalRounds?'/'+totalRounds:''}</p>
+      </div>
+    </div>
+    ${myStreak >= 3 ? `<div style="text-align:center;margin-bottom:10px">
+      <span class="combo-badge">${myStreak>=8?'🔥🔥🔥':myStreak>=5?'🔥🔥':'🔥'} COMBO x${myStreak}</span>
+    </div>` : ''}`;
+
+  let mainHtml = '';
+
+  if (phase === 'lobby') {
+    mainHtml = `${headerHtml}<div style="text-align:center;padding:50px 0">
+      <p style="font-size:3rem;margin-bottom:12px" class="waiting-pulse">⏳</p>
+      <p style="font-weight:800;font-size:1rem">En attente de l'hôte…</p>
+    </div>`;
+  }
+
+  else if (phase === 'playing') {
+    const elapsedNow = _multi.roundStartTime > 0 ? (Date.now() - _multi.roundStartTime)/1000 : 0;
+    const remNow = Math.max(0, dur - elapsedNow);
+    const pctNow = dur > 0 ? Math.min(100, (elapsedNow/dur)*100) : 0;
+    const timerBarClass = elapsedNow < dur*0.5 ? 'timer-bar-green' : elapsedNow < dur*0.75 ? 'timer-bar-yellow' : 'timer-bar-red';
+
+    if (myAns !== null) {
+      mainHtml = `${headerHtml}
+        <div style="text-align:center;padding:40px 0">
+          <p style="font-size:3rem;margin-bottom:12px">✅</p>
+          <p style="font-weight:800;font-size:1rem;margin-bottom:6px">Réponse envoyée !</p>
+          <p class="text-xs text-dim mb-3">En attente des autres joueurs…</p>
+          <p style="font-size:.9rem;color:var(--player);font-weight:700">"${escHtml(myAns)}"</p>
+        </div>`;
+    } else if (q && q.choices && q.choices.length) {
+      const label = (q.field||'artist')==='artist' ? "L'ARTISTE" : 'LE TITRE';
+      mainHtml = `${headerHtml}
+        <div class="timer-bar-wrap">
+          <div id="player-timer-bar" class="timer-bar-fill ${timerBarClass}" style="width:${100-pctNow}%"></div>
+        </div>
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <p class="text-xs" style="color:var(--tx2);letter-spacing:2px">DEVINER ${label}</p>
+          </div>
+          <div id="player-timer-txt" class="timer-countdown${remNow<=5?' urgent':''}">${Math.ceil(remNow)}s</div>
+        </div>
+        <div class="choices-grid">
+          ${q.choices.map((c,ci) => `
+            <button class="choice-btn" onclick='multiPlayerAnswer(${JSON.stringify(c).replace(/'/g,"'")})'>
+              <span class="choice-key">${['A','B','C','D'][ci]||ci+1}</span>
+              ${escHtml(c)}
+            </button>`).join('')}
+        </div>`;
+    } else {
+      mainHtml = `${headerHtml}<div style="text-align:center;padding:50px 0">
+        <p style="font-size:3rem;margin-bottom:12px">🎵</p>
+        <p style="font-weight:800">Écoute bien…</p>
+        <p class="text-xs text-dim mt-2">Les choix arrivent</p>
+      </div>`;
+    }
+  }
+
+  else if (phase === 'answered') {
+    const correct = rev?.correct || '';
+    const ok = myAns !== null && norm(myAns) === norm(correct);
+    const myPts = (_multi.roundPts || {})[_multi.playerName];
+    const streakLabel = myStreak>=10?'🔥🔥🔥 x'+myStreak:myStreak>=5?'🔥🔥 x'+myStreak:myStreak>=3?'🔥 x'+myStreak:null;
+
+    const rtEntries = Object.entries(_multi.responseTimes||{})
+      .map(([n,arr]) => ({name:n, ms:arr.length?arr[arr.length-1]:null}))
+      .filter(e=>e.ms!=null).sort((a,b)=>a.ms-b.ms);
+
+    const rtHtml = rtEntries.length > 1
+      ? `<div style="margin-top:12px">
+          <p class="text-xs text-dim mb-2" style="letter-spacing:1px">⚡ TEMPS DE RÉPONSE</p>
+          ${rtEntries.map((e,i) => `
+            <div class="flex items-center gap-2" style="padding:4px 0">
+              <span style="font-size:.65rem;color:${PARTY_COLORS[i%PARTY_COLORS.length]};font-weight:800;min-width:22px">${i+1}.</span>
+              <span class="text-xs flex-1">${escHtml(e.name)}</span>
+              <span style="font-family:'Space Mono',monospace;font-size:.68rem;font-weight:700;color:${i===0?'var(--green)':'var(--tx2)'}">${(e.ms/1000).toFixed(2)}s</span>
+            </div>`).join('')}
+        </div>` : '';
+
+    mainHtml = `${headerHtml}
+      <div style="text-align:center;padding:16px 0 20px">
+        <p style="font-size:3.5rem;margin-bottom:10px">${ok?'🥳':myAns?'😅':'😶'}</p>
+        <p style="font-weight:800;font-size:1.1rem;margin-bottom:6px;color:${ok?'var(--green)':myAns?'var(--red)':'var(--tx2)'}">
+          ${ok
+            ? (streakLabel?streakLabel+' · ':'') + '+'+(myPts?myPts.total:diff.pts)+' pts !'
+            : myAns ? 'Pas tout à fait…' : 'Pas de réponse'}
+        </p>
+        ${ok && myPts && (myPts.speed>0||myPts.streak>0) ? `
+          <div style="display:flex;gap:5px;justify-content:center;flex-wrap:wrap;margin-bottom:12px">
+            <span class="badge badge-purple">⚡ Base +${myPts.base}</span>
+            ${myPts.speed>0?`<span class="badge badge-player">🚀 Vitesse +${myPts.speed}</span>`:''}
+            ${myPts.streak>0?`<span class="badge badge-gold">🔥 Combo +${myPts.streak}</span>`:''}
+          </div>` : ''}
+        <div class="reveal-banner mb-3" style="text-align:left">
+          <p class="text-xs" style="color:var(--green);letter-spacing:2px;margin-bottom:3px;opacity:.7">RÉPONSE</p>
+          <p style="font-weight:800">🎵 ${escHtml(rev?.artist||'')} — <span style="color:var(--tx)">${escHtml(rev?.title||'')}</span></p>
+        </div>
+        ${myAns && !ok ? `<p class="text-xs text-dim mb-2">Ta réponse : "${escHtml(myAns)}"</p>` : ''}
+      </div>
+      ${rtHtml}
+      <div class="reaction-bar mt-2">
+        ${REACTION_EMOJIS.map(e=>`<button class="reaction-btn" onclick="sendReaction('${e}')">${e}</button>`).join('')}
+      </div>
+      ${myRank > 0 ? `<div style="text-align:center;margin-top:14px">
+        <p class="text-xs text-dim" style="letter-spacing:1px">TON CLASSEMENT</p>
+        <p style="font-family:'Space Mono',monospace;font-weight:700;font-size:1.4rem;color:var(--gold)">#${myRank}</p>
+      </div>` : ''}`;
+  }
+
+  return `<div class="screen">${mainHtml}</div>`;
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER : Résultats
+// ═══════════════════════════════════════════════════════════════
+function renderMultiResults() {
+  if (!_multi) return renderMultiSetup();
+  const scores   = _multi.scores || {};
+  const nRounds  = _multi.queue ? _multi.queue.length : 0;
+  const diff     = BT_DIFF[_multi.diff || 'facile'];
+  const correctCount = _multi.correctCount || {};
+  const maxStreaks   = _multi.maxStreaks || {};
+
+  const ranked = Object.entries(scores).sort((a,b) => b[1]-a[1]);
+
+  // Bonus de fin
+  const finalBonuses = _multi.finalBonuses || [];
+  const BONUS_STYLES = {
+    'RÉFLEXE':  { color:'var(--player)', bg:'rgba(34,211,238,.1)',   border:'rgba(34,211,238,.3)' },
+    'COMBO':    { color:'var(--gold)',   bg:'rgba(252,211,77,.1)',   border:'rgba(252,211,77,.3)' },
+    'LAST CALL':{ color:'var(--purple)', bg:'rgba(192,132,252,.1)',  border:'rgba(192,132,252,.3)' },
+    'PARFAIT':  { color:'var(--green)',  bg:'rgba(74,222,128,.1)',   border:'rgba(74,222,128,.3)' },
+    'REMONTADA':{ color:'var(--host)',   bg:'rgba(249,115,22,.1)',   border:'rgba(249,115,22,.3)' },
+  };
+
+  const bonusByPlayer = {};
+  finalBonuses.forEach(b => {
+    if (!bonusByPlayer[b.player]) bonusByPlayer[b.player] = [];
+    bonusByPlayer[b.player].push(b);
+  });
+
+  // Tie check
+  const hasTie = ranked.length > 1 && ranked[0][1] === ranked[1][1];
+
+  const bonusSectionHtml = finalBonuses.length > 0 ? `
+    <div class="card mb-3">
+      <div style="text-align:center;margin-bottom:14px">
+        <p style="font-size:1.6rem;margin-bottom:4px">🎁</p>
+        <p class="display" style="font-size:1rem;letter-spacing:3px;color:var(--gold)">BONUS DE FIN DE PARTIE</p>
+      </div>
+      ${finalBonuses.map(b => {
+        const style = BONUS_STYLES[b.label] || {color:'var(--purple)',bg:'rgba(192,132,252,.1)',border:'rgba(192,132,252,.3)'};
+        return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:6px;background:${style.bg};border:1px solid ${style.border};border-radius:10px">
+          <span style="font-size:1.4rem;flex-shrink:0">${b.emoji}</span>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span class="display" style="font-size:.72rem;letter-spacing:2px;color:${style.color}">${b.label}</span>
+              <span style="font-size:.82rem;font-weight:800;color:var(--tx)">${escHtml(b.player)}</span>
+            </div>
+            <p style="font-size:.63rem;color:var(--tx2);margin-top:1px">${escHtml(b.sub)}</p>
+          </div>
+          <span class="display" style="font-size:1.1rem;color:${style.color};flex-shrink:0">+${b.pts.toLocaleString()}</span>
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
+  const winnerHtml = ranked[0] ? `
+    <div class="card card-gold mb-3 text-center" style="padding:24px 20px">
+      <p class="text-xs" style="color:var(--tx2);letter-spacing:3px;margin-bottom:10px">🏆 GAGNANT</p>
+      <div class="player-dot" style="background:var(--gold);color:#000;width:52px;height:52px;font-size:1.2rem;margin:0 auto 10px;font-family:'Barlow Condensed',sans-serif;font-weight:900">
+        ${escHtml(ranked[0][0][0].toUpperCase())}
+      </div>
+      <p class="display" style="font-size:1.6rem;color:var(--gold);margin-bottom:4px">${escHtml(ranked[0][0])}</p>
+      <p class="neon-gold" style="font-family:'Space Mono',monospace;font-weight:700;font-size:2.6rem;line-height:1.1">${ranked[0][1].toLocaleString()}</p>
+      <p style="font-size:.65rem;color:var(--tx2);margin-top:4px">points</p>
+      ${(bonusByPlayer[ranked[0][0]]||[]).length > 0
+        ? `<div style="display:flex;gap:5px;justify-content:center;flex-wrap:wrap;margin-top:10px">
+            ${(bonusByPlayer[ranked[0][0]]||[]).map(b=>`<span style="background:rgba(252,211,77,.2);color:var(--gold);border-radius:20px;padding:2px 10px;font-size:.63rem;font-weight:800">${b.emoji} ${b.label}</span>`).join('')}
+          </div>` : ''}
+      ${hasTie ? `<p class="text-xs text-dim mt-2">⏱ ex-æquo départagé par le temps</p>` : ''}
+    </div>` : '';
+
+  const rankingHtml = `
+    <div class="card mb-4">
+      <h3 style="margin-bottom:12px">📊 Classement final</h3>
+      ${ranked.map(([name, score], i) => {
+        const col = PARTY_COLORS[i % PARTY_COLORS.length];
+        const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`<span class="display" style="color:var(--tx2);font-size:.9rem">#${i+1}</span>`;
+        const correct = correctCount[name] ?? '?';
+        const maxStreak = maxStreaks[name] || 0;
+        const playerBonuses = bonusByPlayer[name] || [];
+        return `<div style="padding:12px 0;border-bottom:1px solid var(--border)">
+          <div class="flex items-center gap-3">
+            <span style="font-size:1.2rem;min-width:28px;text-align:center">${medal}</span>
+            <span class="player-dot" style="background:${col};color:#000;font-size:.75rem">${escHtml(name[0].toUpperCase())}</span>
+            <span style="font-weight:800;flex:1">${escHtml(name)}</span>
+            <div style="text-align:right">
+              <span style="font-family:'Space Mono',monospace;font-size:1.3rem;color:${col}">${score.toLocaleString()}</span>
+              <span class="text-xs text-dim"> pts</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:5px;padding-left:60px;flex-wrap:wrap">
+            <span style="font-size:.62rem;color:var(--tx2)">✅ ${correct}/${nRounds}</span>
+            ${maxStreak >= 3 ? `<span style="font-size:.62rem;color:var(--gold)">🔥 x${maxStreak}</span>` : ''}
+            ${playerBonuses.map(b=>{
+              const st = BONUS_STYLES[b.label]||{bg:'rgba(192,132,252,.1)',color:'var(--purple)'};
+              return `<span style="background:${st.bg};color:${st.color};border-radius:10px;padding:1px 7px;font-size:.6rem;font-weight:800">${b.emoji} +${b.pts}</span>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  return `<div class="screen" style="text-align:center">
+    <div style="padding:16px 0 14px">
+      <p style="font-size:2.2rem;margin-bottom:6px">🏆</p>
+      <h2 class="neon-gold">Résultats</h2>
+      <p class="text-xs text-dim mt-1">${nRounds} manches · ${diff.icon} ${diff.label}</p>
+    </div>
+    ${winnerHtml}
+    ${bonusSectionHtml}
+    <div style="text-align:left">${rankingHtml}</div>
+    <button class="btn btn-player btn-lg btn-full mb-3" onclick="shareScore()">📤 Partager les résultats</button>
+    <button class="btn btn-host btn-lg btn-full mb-3" onclick="ablyDisconnect();goto('multi-setup')">🔄 Nouvelle partie</button>
+    <button class="btn btn-ghost btn-full" onclick="ablyDisconnect();goto('home')">🏠 Retour à l'accueil</button>
+  </div>`;
+}
+
+
+function setVolume(v) {
+  _volume = Math.max(0, Math.min(1, parseFloat(v)));
+  if (_audio) _audio.volume = _volume;
+  try { localStorage.setItem('bt_volume', _volume); } catch(e) {}
+}
+function loadVolume() {
+  try { const v = localStorage.getItem('bt_volume'); if (v !== null) { const p = parseFloat(v); if (!isNaN(p)) _volume = Math.max(0, Math.min(1, p)); } } catch(e) {}
+}
+
+function stopAudio() {
+  if (_audio) { try { _audio.pause(); } catch(e){} _audio.src = ''; _audio = null; }
+  clearInterval(_uiTimer);
+}
+
+// ── PRÉCHARGEMENT ─────────────────────────────────────────────
+// On commence à télécharger l'audio dès qu'on connaît l'URL,
+// avant même la navigation — gain de 1-4 secondes sur Archive.org
+let _preloadAudio = null;
+function preloadAudio(url) {
+  if (!url) return;
+  // Si la chanson est déjà en cache blob, pas besoin d'un élément Audio supplémentaire
+  if (_audioCache.has(url)) return;
+  if (_preloadAudio && _preloadAudio._url === url) return; // déjà en cours
+  if (_preloadAudio) { try { _preloadAudio.src = ''; } catch(e){} _preloadAudio = null; }
+  const a = new Audio();
+  a.preload = 'auto';
+  a._url = url;
+  a.src = url;
+  _preloadAudio = a;
+}
+
+// ── CACHE AUDIO BLOB ──────────────────────────────────────────────────────────
+// Télécharge toutes les chansons en mémoire (Blob) dès que la queue est connue.
+// playSegment utilise la blobURL si disponible → lecture instantanée, zéro saut.
+const _audioCache    = new Map(); // originalUrl → blobUrl
+const _prefetchBusy  = new Set(); // urls en cours de fetch
+let   _prefetchDone  = 0;
+let   _prefetchTotal = 0;
+
+async function _fetchToCache(url) {
+  if (!url || _audioCache.has(url) || _prefetchBusy.has(url)) return;
+  _prefetchBusy.add(url);
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const blob = await resp.blob();
+    _audioCache.set(url, URL.createObjectURL(blob));
+    _prefetchDone++;
+    _updatePrefetchUI();
+    console.log(`[AudioCache] ✅ ${_prefetchDone}/${_prefetchTotal} — ${url.split('/').pop()}`);
+  } catch(e) {
+    console.warn('[AudioCache] ❌ Échec :', url.split('/').pop(), e.message);
+  } finally {
+    _prefetchBusy.delete(url);
+  }
+}
+
+function prefetchQueue(songs, concurrency = 3) {
+  if (!songs || !songs.length) return;
+  const urls = songs.map(s => s.url).filter(u => u && !_audioCache.has(u) && !_prefetchBusy.has(u));
+  if (!urls.length) return;
+  _prefetchDone = 0;
+  _prefetchTotal = urls.length;
+  _updatePrefetchUI();
+  let i = 0;
+  const runNext = () => {
+    if (i >= urls.length) return;
+    const url = urls[i++];
+    _fetchToCache(url).then(runNext);
+  };
+  for (let c = 0; c < Math.min(concurrency, urls.length); c++) runNext();
+}
+
+function _updatePrefetchUI() {
+  const el = document.getElementById('prefetch-status');
+  if (!el) return;
+  if (_prefetchTotal === 0) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  if (_prefetchDone >= _prefetchTotal) {
+    el.innerHTML = `<span style="color:var(--green)">✅ ${_prefetchTotal} chansons prêtes — aucun saut possible !</span>`;
+    setTimeout(() => { if (el) el.style.display = 'none'; }, 4000);
+  } else {
+    const pct = Math.round((_prefetchDone / _prefetchTotal) * 100);
+    el.innerHTML = `
+      <span style="color:var(--tx3)">⬇️ Pré-chargement</span>
+      <span style="font-weight:800;color:var(--player)">${_prefetchDone}/${_prefetchTotal}</span>
+      <div style="flex:1;height:4px;background:var(--bg4);border-radius:2px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:var(--player);border-radius:2px;transition:width .3s"></div>
+      </div>`;
+  }
+}
+
+function _clearAudioCache() {
+  _audioCache.forEach(blobUrl => { try { URL.revokeObjectURL(blobUrl); } catch(e){} });
+  _audioCache.clear();
+  _prefetchBusy.clear();
+  _prefetchDone = 0;
+  _prefetchTotal = 0;
+}
+
+function playSegment(url, startMode, duration, { onEnd, onTick, onPlay, getSyncTime } = {}) {
+  stopAudio();
+
+  // ── Résolution blob cache ────────────────────────────────────
+  url = _audioCache.get(url) || url;
+
+  // Réutiliser le préchargement si l'URL correspond
+  if (_preloadAudio && _preloadAudio._url === url && !_preloadAudio.error) {
+    _audio = _preloadAudio;
+    _preloadAudio = null;
+  } else {
+    if (_preloadAudio) { try { _preloadAudio.src = ''; } catch(e){} _preloadAudio = null; }
+    _audio = new Audio(url);
+  }
+  _audio.preload = 'auto';
+  _audio.volume = _volume;
+
+  _audio.addEventListener('loadedmetadata', () => {
+    if (!_audio) return;
+    const total = _audio.duration || 200;
+    const maxStart = Math.max(0, total - duration - 3);
+    const baseStart = startMode === 'aleatoire' ? Math.random() * maxStart : 0;
+
+    // ── Calcul de la position de seek (1ère lecture de getSyncTime) ────────
+    // On lit le roundStartTime DE L'HÔTE dès qu'on connaît les métadonnées.
+    // Si un 2e broadcast arrive pendant le seek, on relit le temps au moment
+    // de _startPlayback() pour la durée ajustée → double compensation.
+    const _getLag = () => {
+      const refTime = getSyncTime ? getSyncTime() : 0;
+      return (refTime > 0) ? Math.max(0, (Date.now() - refTime) / 1000 - 0.15) : 0;
+    };
+    const startAt = Math.min(baseStart + _getLag(), Math.max(0, total - 4));
+
+    const _startPlayback = () => {
+      if (!_audio) return;
+      // 2e lecture : lag recalculé après le seek (le broadcast précis de l'hôte
+      // a pu arriver entre loadedmetadata et la fin du seek)
+      const lag = _getLag();
+      const adjustedDur = lag > 0.5 ? Math.max(3, duration - lag) : duration;
+
+      const p = _audio.play();
+      if (p && typeof p.catch === 'function') {
+        p.catch(() => setTimeout(() => { if (_audio) _audio.play().catch(() => {}); }, 400));
+      }
+
+      // ── Utiliser l'événement 'playing' plutôt que le retour de play() ───
+      // Garantit que l'audio joue réellement avant de démarrer les timers.
+      // Critique sur iOS Safari où play() est résolu avant la lecture effective.
+      _audio.addEventListener('playing', () => {
+        onPlay && onPlay();
+        onTick && onTick(adjustedDur, duration);
+        const endAt = Date.now() + adjustedDur * 1000;
+        _uiTimer = setInterval(() => {
+          const rem = Math.max(0, (endAt - Date.now()) / 1000);
+          onTick && onTick(rem, duration);
+          if (rem <= 0) { clearInterval(_uiTimer); stopAudio(); onEnd && onEnd(); }
+        }, 100);
+      }, { once: true });
+    };
+
+    if (startAt > 0.5) {
+      let _seekDone = false;
+      const _onSeeked = () => { if (_seekDone) return; _seekDone = true; _startPlayback(); };
+      _audio.addEventListener('seeked', _onSeeked, { once: true });
+      // Filet de sécurité si 'seeked' ne se déclenche pas (certains formats/navigateurs)
+      setTimeout(() => { if (!_seekDone && _audio) { _seekDone = true; _startPlayback(); } }, 2500);
+      _audio.currentTime = startAt;
+    } else {
+      _startPlayback();
+    }
+  });
+
+  _audio.addEventListener('error', (e) => {
+    console.warn('[Audio] Erreur de chargement :', url, e);
+    stopAudio();
+    onEnd && onEnd();
+  });
+}
+
+function parseName(filename) {
+  const name = filename.replace(/\.[^.]+$/, '');
+  const i = name.indexOf(' - ');
+  if (i > -1) return { artist: name.slice(0, i).trim(), title: name.slice(i + 3).trim() };
+  return { artist: 'Inconnu', title: name.trim() };
+}
+
+function handleAudioFiles(files) {
+  const arr = Array.from(files).filter(f => /\.(mp3|wav|ogg|m4a|flac|aac|webm)$/i.test(f.name) || f.type.startsWith('audio/'));
+  S.songs.filter(s => s.file !== null).forEach(s => { try { URL.revokeObjectURL(s.url); } catch(e) {} });
+  const newSongs = arr.map(f => {
+    const { artist, title } = parseName(f.name);
+    return { file: f, name: f.name, url: URL.createObjectURL(f), artist, title };
+  });
+  const serverSongs = S.songs.filter(s => s.file === null);
+  S.songs = [...serverSongs, ...newSongs];
+  render();
+}
+
+
+
+function norm(s) {
+  if (s == null) return ''; // guard null/undefined
+  return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/['''‛]/g,"'").trim();
+}
+
+
+
+
+function allArtists() {
+  return [...new Set(S.songs.map(s => s.artist))];
+}
+
+const NAV_ITEMS = [
+  { id:'multi-setup', icon:'🌐', label:'Multi',      color:'g' },
+  { id:'leaderboard', icon:'🏆', label:'Classement', color:'y' },
+  { id:'stats',       icon:'📊', label:'Stats',      color:'c' },
+];
+
+function getNavActiveId(screen) {
+  if (['multi-setup','multi-lobby','multi-game','multi-results'].includes(screen)) return 'multi-setup';
+  if (screen === 'stats') return 'stats';
+  return screen;
+}
+
+function renderNav() {
+  const songCount = S.songs.length;
+  const activeId  = getNavActiveId(S.screen);
+
+  const sidebarNav = document.getElementById('sidebar-nav');
+  const bnav       = document.getElementById('bnav-items');
+  const footer     = document.getElementById('sidebar-footer');
+  const vinyl      = document.getElementById('deco-vinyl');
+  if (vinyl) {
+    vinyl.classList.remove('spin');
+  }
+
+  if (sidebarNav) {
+    sidebarNav.innerHTML = NAV_ITEMS.map(item => {
+      if (item.divider) return `<div class="nav-section">${item.divider}</div>`;
+      const isActive = activeId === item.id;
+      const activeClass = isActive ? (item.color ? `active-${item.color}` : 'active') : '';
+      let badge = '';
+      return `<button class="nav-item ${activeClass}" onclick="goto('${item.id}')">
+        <span class="nav-icon">${item.icon}</span>
+        <span>${item.label}</span>
+        ${badge}
+      </button>`;
+    }).join('');
+  }
+
+  if (footer) {
+    const pseudo = getUserPseudo();
+    footer.innerHTML = `
+    ${pseudo
+      ? `<div onclick="showPseudoModal()" title="Modifier ton pseudo" style="display:flex;align-items:center;gap:8px;background:var(--bg3);border-radius:8px;padding:7px 10px;margin-bottom:8px;cursor:pointer;border:1px solid var(--border);transition:border-color .15s" onmouseover="this.style.borderColor='rgba(139,92,246,.5)'" onmouseout="this.style.borderColor='var(--border)'">
+        <span style="font-size:1rem">👤</span>
+        <span style="flex:1;font-size:.72rem;font-weight:700;color:var(--p);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(pseudo)}</span>
+        <span style="font-size:.6rem;color:var(--tx2)">✏️</span>
+      </div>`
+      : `<button class="btn btn-ghost btn-sm btn-full" style="margin-bottom:8px;font-size:.65rem" onclick="showPseudoModal()">👤 Définir mon pseudo</button>`
+    }
+    <div class="sidebar-stats">
+      <div class="stat-chip"><span class="num" style="color:var(--p)">${songCount}</span><span class="lbl">🎵 Titres</span></div>
+    </div>
+    <p style="text-align:center;opacity:.5;font-size:.6rem">🌐 MULTIJOUEUR EN LIGNE</p>`;
+  }
+
+  if (bnav) {
+    const mobileItems = NAV_ITEMS.filter(i => !i.divider);
+    bnav.innerHTML = mobileItems.map(item => {
+      const isActive = activeId === item.id;
+      const activeClass = isActive ? (item.color ? `active-${item.color}` : 'active') : '';
+      return `<button class="bnav-item ${activeClass}" onclick="goto('${item.id}')">
+        <span class="bni">${item.icon}</span>
+        <span>${item.label}</span>
+      </button>`;
+    }).join('');
+  }
+}
+function render() {
+  const app = document.getElementById('app');
+  switch (S.screen) {
+    case 'home':
+    case 'multi-setup':         app.innerHTML = renderMultiSetup(); break;
+    case 'multi-host-settings': app.innerHTML = renderMultiHostSettings(); break;
+    case 'leaderboard':  app.innerHTML = renderLeaderboard(); break;
+    case 'multi-lobby':  app.innerHTML = renderMultiLobby(); _updatePrefetchUI(); _renderQR(); break;
+    case 'multi-game':   app.innerHTML = renderMultiGame();  _multiPostRender(); break;
+    case 'multi-results':app.innerHTML = renderMultiResults(); break;
+    case 'stats':         app.innerHTML = renderStats(); break;
+  }
+  renderNav();
+}
+
+function goto(screen, { keepAudio = false } = {}) {
+  clearKeyHandler();
+  if (!keepAudio) stopAudio();
+  S.screen = screen;
+  render();
+  window.scrollTo(0, 0);
+}
+function escHtml(s) {
+  if (!s) return '';
+  const m = {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":'&#39;'};
+  return String(s).replace(/[&<>"']/g, c => m[c]);
+}
+
+
+/* ── SONS DE FEEDBACK (Web Audio API, aucun fichier externe) ── */
+let _audioCtx = null;
+function getAudioCtx() {
+  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return _audioCtx;
+}
+function playCorrectSound() {
+  try {
+    const ctx = getAudioCtx();
+    const t = ctx.currentTime;
+    // Deux notes montantes : Do → Mi
+    [[523, t, .08], [659, t+.1, .12]].forEach(([freq, start, dur]) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = freq;
+      gain.gain.setValueAtTime(.25, start);
+      gain.gain.exponentialRampToValueAtTime(.001, start + dur);
+      osc.start(start); osc.stop(start + dur);
+    });
+  } catch(e) {}
+}
+function playWrongSound() {
+  try {
+    const ctx = getAudioCtx();
+    const t = ctx.currentTime;
+    // Bruit court descendant façon buzzer
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(220, t);
+    osc.frequency.exponentialRampToValueAtTime(80, t + .25);
+    gain.gain.setValueAtTime(.3, t);
+    gain.gain.exponentialRampToValueAtTime(.001, t + .25);
+    osc.start(t); osc.stop(t + .25);
+  } catch(e) {}
+}
+
+function showFeedback(text, color) {
+  const layer = document.getElementById('feedback-layer');
+  if (!layer) return;
+  layer.style.display = 'flex';
+  layer.innerHTML = '';
+  const span = document.createElement('span');
+  span.className = 'feedback-txt';
+  span.style.color = color;
+  span.textContent = text; // textContent : jamais d'injection HTML
+  layer.appendChild(span);
+  setTimeout(() => { layer.style.display = 'none'; layer.innerHTML = ''; }, 800);
+}
+
+window.pickMusicFolder = pickMusicFolder;
+window.stopAudio = stopAudio;
+window.setVolume = setVolume;
+window.S = S;
+
+
+
+
+// ═══════════════════════════════════════════════════════════════
+// MULTIJOUEUR — ABLY REALTIME
+// ═══════════════════════════════════════════════════════════════
+
+const ABLY_KEY = 'lPL6kQ.ErKKBw:wWefHnBgmBJGVwiIRycvlQCQSjvKGosGDQ2gfIIZW8k';
+const REACTION_EMOJIS = ['🔥','💀','😂','👏','🫡','❤️','😭','😤','🤩'];
+
+let _ablyClient = null;
+let _ablyChan   = null;
+let _multi      = null; // état courant multijoueur
+let _playerTimer = null; // timer côté joueur
+let _hostSvgTimer = null; // timer SVG côté hôte
+let _hostWatchdog = null; // timeout déconnexion hôte (côté joueur)
+
+function genRoomCode() {
+  const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:5}, () => c[Math.floor(Math.random()*c.length)]).join('');
+}
+
+async function ablyConnect() {
+  if (_ablyClient && _ablyClient.connection.state === 'connected') return;
+  setConnDot('connecting');
+  return new Promise((res, rej) => {
+    _ablyClient = new Ably.Realtime({
+      key: ABLY_KEY,
+      clientId: 'user-' + Math.random().toString(36).slice(2,8),
+      disconnectedRetryTimeout: 3000,
+      suspendedRetryTimeout: 8000,
+    });
+    let resolved = false;
+    const _ablyTimeout = setTimeout(() => {
+      if (!resolved) { resolved = true; rej(new Error('Timeout — vérifie ta connexion internet')); }
+    }, 14000);
+    _ablyClient.connection.on(stateChange => {
+      const st = stateChange.current;
+      if (st === 'connected') {
+        clearTimeout(_ablyTimeout);
+        setConnDot('connected');
+        hideNetBanner();
+        if (!resolved) { resolved = true; res(); return; }
+        // Reconnexion pendant une partie
+        if (_multi) {
+          showToast('📡 Connexion restaurée !', 2500);
+          if (_multi.role === 'host' && _ablyChan) {
+            setTimeout(() => _hostBroadcast(), 500);
+          }
+        }
+      } else if (st === 'failed') {
+        clearTimeout(_ablyTimeout);
+        setConnDot('failed');
+        showNetBanner();
+        if (!resolved) { resolved = true; rej(new Error('Connexion Ably échouée')); }
+      } else if (st === 'disconnected' || st === 'suspended') {
+        setConnDot('connecting');
+        showNetBanner();
+        if (_multi) showToast('⚠️ Connexion perdue — reconnexion…', 3500);
+      }
+    });
+  });
+}
+
+function ablyDisconnect() {
+  stopAudio();
+  clearPlayerTimer();
+  clearInterval(_hostSvgTimer); _hostSvgTimer = null;
+  clearTimeout(_hostWatchdog); _hostWatchdog = null;
+  if (_ablyChan) { try { _ablyChan.unsubscribe(); } catch(e){} _ablyChan = null; }
+  if (_ablyClient) { try { _ablyClient.close(); } catch(e){} _ablyClient = null; }
+  _multi = null;
+  _clearAudioCache(); // libérer les blobs en mémoire
+  setConnDot('');
+}
+
+// ── INDICATEUR CONNEXION ───────────────────────────────────────
+function setConnDot(state) {
+  document.querySelectorAll('.multi-conn-dot').forEach(dot => {
+    dot.className = 'conn-dot multi-conn-dot' + (state ? ' ' + state : '');
+    const labels = { connected:'Connecté', connecting:'Connexion…', failed:'Erreur réseau' };
+    dot.title = labels[state] || 'Déconnecté';
+  });
+}
+
+// ── TOAST ─────────────────────────────────────────────────────
+function showToast(msg, duration = 2200) {
+  const old = document.getElementById('_toast');
+  if (old) old.remove();
+  const t = document.createElement('div');
+  t.id = '_toast';
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { if (t.parentNode) t.remove(); }, duration);
+}
+
+// ── RÉACTIONS EMOJI ───────────────────────────────────────────
+function showReactionFloat(emoji) {
+  const el = document.createElement('div');
+  el.className = 'reaction-float';
+  el.textContent = emoji;
+  el.style.left   = (15 + Math.random() * 65) + '%';
+  el.style.bottom = '90px';
+  document.body.appendChild(el);
+  setTimeout(() => { if (el.parentNode) el.remove(); }, 1500);
+}
+let _lastReactionAt = 0;
+function sendReaction(emoji) {
+  if (!_ablyChan || !_multi) return;
+  const now = Date.now();
+  if (now - _lastReactionAt < 1500) return; // max 1 réaction / 1.5s
+  _lastReactionAt = now;
+  _ablyChan.publish('player:reaction', {
+    name: _multi.role === 'host' ? '🎮' : (_multi.playerName || '?'),
+    emoji
+  });
+  showReactionFloat(emoji);
+}
+
+// ── COPIER CODE ───────────────────────────────────────────────
+function copyRoomCode() {
+  if (!_multi?.roomCode) return;
+  navigator.clipboard.writeText(_multi.roomCode)
+    .then(() => showToast('📋 Code copié : ' + _multi.roomCode))
+    .catch(() => showToast('Code : ' + _multi.roomCode));
+}
+
+// ── TIMER JOUEUR ──────────────────────────────────────────────
+function startPlayerTimer(startTime, dur) {
+  clearInterval(_playerTimer);
+  _playerTimer = setInterval(() => {
+    const elapsed = (Date.now() - startTime) / 1000;
+    const rem = Math.max(0, dur - elapsed);
+    // Barre de progression (fallback)
+    const bar = document.getElementById('player-timer-bar');
+    const txt = document.getElementById('player-timer-txt');
+    // Arc SVG (même style que local)
+    const arc = document.getElementById('multi-speed-prog');
+    const arcTxt = document.getElementById('multi-speed-elapsed');
+    const pct = dur > 0 ? Math.min(100, (elapsed / dur) * 100) : 0;
+    const color = elapsed > dur * 0.75 ? 'var(--r)' : elapsed > dur * 0.5 ? 'var(--y)' : 'var(--g)';
+    if (bar) {
+      bar.style.width = (rem / dur * 100) + '%';
+      bar.className   = 'prog-fill' + (rem <= 5 ? ' urgent' : '');
+    }
+    if (txt) {
+      txt.textContent = Math.ceil(rem) + 's';
+      txt.className   = 'timer-countdown' + (rem <= 5 ? ' urgent' : '');
+    }
+    if (arc) {
+      arc.setAttribute('stroke-dasharray', `${pct} 100`);
+      arc.setAttribute('stroke', color);
+    }
+    if (arcTxt) {
+      arcTxt.textContent = elapsed.toFixed(1) + 's';
+      arcTxt.style.color = color;
+    }
+    if (rem <= 0) clearInterval(_playerTimer);
+  }, 100);
+}
+function clearPlayerTimer() {
+  clearInterval(_playerTimer);
+  _playerTimer = null;
+}
+
+// ── HÔTE : Créer la salle ──────────────────────────────────────
+async function multiCreateRoom() {
+  const btn = document.getElementById('multi-create-btn');
+  const hostName = (S.hostName || '').trim() || 'Hôte';
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Connexion…'; }
+  try {
+    await ablyConnect();
+    const roomCode = genRoomCode();
+    _ablyChan = _ablyClient.channels.get('blindtest-' + roomCode);
+    _multi = {
+      role: 'host', roomCode,
+      hostName,
+
+      players: [{ name: hostName, answered: false, isHost: true }],
+      scores: { [hostName]: 0 },
+      streaks: { [hostName]: 0 },    // streak courante par joueur
+      maxStreaks: { [hostName]: 0 },  // streak max atteinte (bonus COMBO final)
+      correctCount: { [hostName]: 0 }, // nb bonnes réponses (bonus PARFAIT final)
+      correctResponseTimes: { [hostName]: [] }, // temps des bonnes réponses (bonus RÉFLEXE final)
+      halfTimeScores: null,            // snapshot à mi-parcours (bonus REMONTADA final)
+      lastRoundCorrect: {},            // qui a bon sur la dernière (bonus LAST CALL final)
+      roundPts: {},                    // ptsInfo du round par joueur
+      answers: {},    // {name: val} round courant
+      myAnswer: null, // réponse de l'hôte (round courant)
+      responseTimes: { [hostName]: [] }, // {name: [ms, ms, ...]} temps de réponse cumulés
+      queue: [], round: 0,
+      phase: 'lobby', // lobby|playing|answered|finished
+      currentChoices: [],
+      field: S.btCfg.field || 'artist',
+      diff:  S.btCfg.diff  || 'facile',
+      rounds: S.btCfg.rounds || 20,
+      roundStartTime: 0,
+      roundDur: 0,
+    };
+
+    _ablyChan.subscribe('player:join', msg => {
+      const { name } = msg.data;
+      if (!name) return;
+      // Refuser si nom déjà pris
+      if (_multi.players.find(p => p.name === name)) {
+        _ablyChan.publish('host:reject', { name, reason: 'Ce prénom est déjà pris dans cette salle.' });
+        return;
+      }
+      _multi.players.push({ name, answered: false });
+      _multi.scores[name] = 0;
+      _multi.streaks[name] = 0;
+      _multi.maxStreaks[name] = 0;
+      _multi.correctCount[name] = 0;
+      if (!_multi.correctResponseTimes) _multi.correctResponseTimes = {};
+      _multi.correctResponseTimes[name] = [];
+      if (!_multi.responseTimes) _multi.responseTimes = {};
+      _multi.responseTimes[name] = [];
+      _hostBroadcast();
+      if (S.screen === 'multi-lobby') render();
+    });
+
+    _ablyChan.subscribe('player:answer', msg => {
+      const { name, value } = msg.data;
+      if (!name || _multi.phase !== 'playing') return;
+      if (_multi.answers[name] !== undefined) return;
+      _multi.answers[name] = value;
+      const _answerTime = Date.now() - (_multi.roundStartTime || Date.now());
+      if (!_multi.responseTimes) _multi.responseTimes = {};
+      if (!_multi.responseTimes[name]) _multi.responseTimes[name] = [];
+      _multi.responseTimes[name].push(_answerTime);
+      const song = _multi.queue[_multi.round];
+          const ok = _multiCheckAnswer(value, song);
+      if (!_multi.streaks) _multi.streaks = {};
+      if (!_multi.roundPts) _multi.roundPts = {};
+      if (ok) {
+        _multi.streaks[name] = (_multi.streaks[name] || 0) + 1;
+        if (_multi.streaks[name] > (_multi.maxStreaks[name] || 0)) _multi.maxStreaks[name] = _multi.streaks[name];
+        _multi.correctCount[name] = (_multi.correctCount[name] || 0) + 1;
+        if (!_multi.correctResponseTimes[name]) _multi.correctResponseTimes[name] = [];
+        _multi.correctResponseTimes[name].push(_answerTime);
+        const elapsedSecs = _answerTime / 1000;
+        const ptsInfo = calcPoints(_multi.diff, elapsedSecs, _multi.roundDur, _multi.streaks[name], false, true);
+        _multi.scores[name] = (_multi.scores[name] || 0) + ptsInfo.total;
+        _multi.roundPts[name] = ptsInfo;
+      } else {
+        _multi.streaks[name] = 0;
+        _multi.roundPts[name] = null;
+      }
+      const p = _multi.players.find(p => p.name === name);
+      if (p) { p.answered = true; p.correct = ok; }
+      _hostBroadcast();
+      if (S.screen === 'multi-game') render();
+      // Auto-reveal si tout le monde a répondu
+      if (_multi.players.length > 0 && _multi.players.every(p => p.answered)) {
+        setTimeout(() => { if (_multi && _multi.phase === 'playing') multiHostReveal(); }, 1500);
+      }
+    });
+
+    _ablyChan.subscribe('player:reaction', msg => {
+      showReactionFloat(msg.data.emoji || '🔥');
+    });
+
+    goto('multi-lobby');
+
+    // ── Heartbeat hôte → joueurs (toutes les 10s) ──────────────
+    // Permet au watchdog côté joueur de savoir que l'hôte est toujours là,
+    // même entre deux rounds (lobby / answered sans activité).
+    const _heartbeatInterval = setInterval(() => {
+      if (!_ablyChan || !_multi || _multi.role !== 'host') { clearInterval(_heartbeatInterval); return; }
+      _ablyChan.publish('host:heartbeat', { ts: Date.now() });
+    }, 10000);
+
+    // Le canal heartbeat réinitialise aussi le watchdog côté joueur
+    // On connaît déjà le pool de chansons → on commence à tout
+    // mettre en cache Blob pendant que les joueurs rejoignent.
+    // Comme ça, quand la partie démarre tout est prêt.
+    {
+      const _prePool = (S.btCfg?.selectedArtists?.length > 0)
+        ? S.songs.filter(s => S.btCfg.selectedArtists.includes(s.artist))
+        : S.songs;
+      const _preN = (_multi.rounds === 9999) ? _prePool.length : Math.min(_multi.rounds, _prePool.length);
+      // Mélange aléatoire pour prioriser les chansons qui seront dans la queue
+      const _preSample = _prePool.slice().sort(() => Math.random() - .5).slice(0, _preN);
+      _prefetchDone = 0; _prefetchTotal = 0;
+      prefetchQueue(_preSample);
+    }
+  } catch(e) {
+    alert('Erreur : ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = '🚀 Lancer la salle'; }
+  }
+}
+
+// ── JOUEUR : Rejoindre la salle ────────────────────────────────
+async function multiJoinRoom(code, name) {
+  code = (code||'').toUpperCase().trim();
+  name = (name||'').trim();
+  if (!code || !name) { alert('Entre le code et ton prénom !'); return; }
+  if (code.length !== 5) { alert('Le code doit faire exactement 5 caractères.'); return; }
+  const btn = document.getElementById('multi-join-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Connexion…'; }
+  try {
+    await ablyConnect();
+    _ablyChan = _ablyClient.channels.get('blindtest-' + code);
+    _multi = {
+      role: 'player', roomCode: code, playerName: name,
+ // sera mis à jour par host:state
+      phase: 'lobby', players: [], scores: {},
+      round: 0, totalRounds: 0,
+      currentQuestion: null, reveal: null,
+      myAnswer: null, allAnswers: {},
+      diff: 'facile', _lastRound: -1,
+      roundStartTime: 0, roundDur: 30,
+      responseTimes: {},
+    };
+
+    // Refus nom doublon
+    _ablyChan.subscribe('host:reject', msg => {
+      if (msg.data.name === name) {
+        alert('❌ ' + (msg.data.reason || 'Connexion refusée.'));
+        ablyDisconnect();
+        goto('multi-setup');
+      }
+    });
+
+    _ablyChan.subscribe('host:state', msg => {
+      const st = msg.data;
+      const wasPhase      = _multi.phase;
+      const wasChoicesLen = _multi.currentQuestion?.choices?.length || 0;
+
+      _multi.phase           = st.phase;
+      _multi.gameType        = st.gameType        || 'bt';
+      _multi.players         = st.players         || [];
+      _multi.scores          = st.scores          || {};
+      _multi.streaks         = st.streaks         || {};
+      _multi.roundPts        = st.roundPts        || {};
+      _multi.round           = st.round           || 0;
+      _multi.totalRounds     = st.totalRounds     || 0;
+      _multi.currentQuestion = st.currentQuestion || null;
+
+      _multi.reveal          = st.reveal          || null;
+      _multi.allAnswers      = st.answers         || {};
+      _multi.diff            = st.diff            || 'facile';
+      _multi.roundStartTime  = st.roundStartTime  || Date.now();
+      _multi.roundDur        = st.roundDur        || BT_DIFF[_multi.diff].dur;
+      _multi.responseTimes   = st.responseTimes   || {};
+      _multi.correctCount    = st.correctCount    || {};
+      _multi.maxStreaks       = st.maxStreaks       || {};
+      if (st.finalBonuses !== null && st.finalBonuses !== undefined) _multi.finalBonuses = st.finalBonuses;
+
+      // ── Correction de la synchro d'horloge ──────────────────────────────
+      // roundStartTime vient de l'hôte (son Date.now()) et peut différer de
+      // plusieurs secondes du joueur. On recalcule en local :
+      //   msg.timestamp  = heure Ably (serveur) de réception du message
+      //   st.elapsedMs   = ms écoulées entre startAudio et le broadcast
+      //   serverLag      = latence serveur → joueur
+      // → roundStartTime joueur ≈ maintenant - elapsedMs - serverLag
+      if (st.phase === 'playing' && st.elapsedMs != null && msg.timestamp) {
+        const serverLag = Math.max(0, Date.now() - msg.timestamp);
+        _multi.roundStartTime = Date.now() - st.elapsedMs - serverLag;
+      }
+
+      // Détecter si un nouveau round doit démarrer (BT seulement)
+      const isNewRound = _multi._lastRound !== st.round;
+      let _pendingAudioUrl = null;
+      let _pendingAudioDur = 0;
+      let _pendingAudioStart = 'debut';
+      if (st.phase === 'playing' && isNewRound) {
+        _multi._lastRound = st.round;
+        _multi.myAnswer   = null;
+        clearPlayerTimer(); // stopper l'ancien timer immédiatement, pas attendre onPlay
+        _pendingAudioUrl   = st.currentQuestion?.songUrl || null;
+        _pendingAudioDur   = _multi.roundDur || BT_DIFF[_multi.diff].dur;
+        _pendingAudioStart = st.currentQuestion?.startMode || 'debut';
+        // ── PRÉCHARGEMENT ANTICIPÉ ──────────────────────────────
+        // On télécharge l'audio en Blob MAINTENANT pour une lecture
+        // instantanée quand playSegment est appelé.
+        if (_pendingAudioUrl) _fetchToCache(_pendingAudioUrl);
+        // Pré-télécharger aussi la chanson suivante si connue
+        if (st.nextSongUrl) _fetchToCache(st.nextSongUrl);
+      }
+
+      // Sons & vibrations contextuels
+      const newChoicesLen = _multi.currentQuestion?.choices?.length || 0;
+      if (st.phase === 'playing' && newChoicesLen > 0 && wasChoicesLen === 0) {
+        _multiPlayChoicesSound();
+        try { navigator.vibrate(80); } catch(e) {}
+      }
+      if (st.phase === 'answered' && wasPhase === 'playing') {
+        stopAudio();
+        clearPlayerTimer();
+        if (_multi.myAnswer !== null) {
+          const ok = norm(_multi.myAnswer) === norm(_multi.reveal?.correct || '');
+          ok ? playCorrectSound() : playWrongSound();
+          try { navigator.vibrate(ok ? [100,50,100] : [250]); } catch(e) {}
+        }
+      }
+
+      if (st.phase === 'finished') { _clearAudioCache(); goto('multi-results'); return; }
+      if (wasPhase === 'lobby' && (st.phase === 'playing' || st.phase === 'answered')) {
+        _multiPlayRoundStartSound();
+        goto('multi-game'); // goto appelle stopAudio() — on lance le son APRES
+      } else if (S.screen === 'multi-lobby' || S.screen === 'multi-game') {
+        render();
+      }
+
+      // Lancer la musique APRES la navigation (goto aurait tué le son sinon)
+      // On attend que le blob soit en cache pour éviter le cold-start streaming
+      // (3-5s de buffering). La compensation de lag gère le délai d'attente.
+      if (_pendingAudioUrl) {
+        const _urlToPlay  = _pendingAudioUrl;
+        const _startMode  = _pendingAudioStart;
+        const _dur        = _pendingAudioDur;
+        const _roundIdx   = _multi.round;
+
+        const _doPlay = () => {
+          if (!_multi || _multi.phase !== 'playing' || _multi.round !== _roundIdx) return;
+          playSegment(_urlToPlay, _startMode, _dur, {
+            getSyncTime: () => _multi?.roundStartTime || 0,
+            onPlay: () => {
+              if (_multi && _multi.myAnswer === null && _multi.phase === 'playing') {
+                startPlayerTimer(_multi.roundStartTime, _multi.roundDur);
+              }
+            }
+          });
+        };
+
+        if (_audioCache.has(_urlToPlay)) {
+          _doPlay(); // blob déjà prêt → lecture immédiate
+        } else {
+          // Polling jusqu'à ce que le blob soit prêt (max 6s, puis fallback streaming)
+          let _waited = 0;
+          const _waitId = setInterval(() => {
+            _waited += 100;
+            if (_audioCache.has(_urlToPlay) || _waited >= 6000) {
+              clearInterval(_waitId);
+              _doPlay();
+            }
+          }, 100);
+        }
+      }
+
+    });
+
+    _ablyChan.subscribe('player:reaction', msg => {
+      showReactionFloat(msg.data.emoji || '🔥');
+    });
+
+    // ── Détection déconnexion hôte ─────────────────────────────
+    // Si aucun message host:state depuis 20s → l'hôte est probablement parti
+    const _resetHostWatchdog = () => {
+      clearTimeout(_hostWatchdog);
+      _hostWatchdog = setTimeout(() => {
+        if (!_multi || _multi.role !== 'player') return;
+        if (S.screen === 'multi-lobby' || S.screen === 'multi-game') {
+          // Proposer de revenir au menu via un toast cliquable
+          const old = document.getElementById('_toast');
+          if (old) old.remove();
+          const t = document.createElement('div');
+          t.id = '_toast';
+          t.className = 'toast';
+          t.style.cssText += ';cursor:pointer;border-color:var(--red);color:var(--red);bottom:100px';
+          t.textContent = '⚠️ Hôte déconnecté — appuie pour quitter';
+          t.onclick = () => { ablyDisconnect(); goto('multi-setup'); };
+          document.body.appendChild(t);
+          // Auto-retour au menu après 8s si pas de clic
+          setTimeout(() => {
+            if (_multi && _multi.role === 'player') { ablyDisconnect(); goto('multi-setup'); }
+          }, 8000);
+        }
+      }, 20000);
+    };
+    _ablyChan.subscribe('host:state', () => _resetHostWatchdog());
+    _ablyChan.subscribe('host:heartbeat', () => _resetHostWatchdog()); // heartbeat léger
+    _resetHostWatchdog();
+
+    _ablyChan.publish('player:join', { name });
+    goto('multi-lobby');
+  } catch(e) {
+    alert('Erreur : ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = '▶ Rejoindre'; }
+  }
+}
+
+// ── Logique hôte ───────────────────────────────────────────────
+function _multiCheckAnswer(val, song) {
+  if (!val || !song) return false;
+  const n = norm(val);
+  return n === norm(song[_multi.field]);
+}
+
+function _hostBroadcast() {
+  if (!_ablyChan || !_multi || _multi.role !== 'host') return;
+  const song = _multi.queue ? _multi.queue[_multi.round] : null;
+  _ablyChan.publish('host:state', {
+    phase          : _multi.phase,
+    gameType       : _multi.gameType || 'bt',
+    players        : _multi.players,
+    scores         : _multi.scores,
+    streaks        : _multi.streaks || {},
+    roundPts       : _multi.phase === 'answered' ? (_multi.roundPts || {}) : {},
+    round          : _multi.round,
+    totalRounds    : _multi.queue ? _multi.queue.length : 0,
+    diff           : _multi.diff,
+    answers        : _multi.phase === 'answered' ? _multi.answers : {},
+    responseTimes  : _multi.responseTimes || {},
+    correctCount   : _multi.correctCount || {},
+    maxStreaks     : _multi.maxStreaks || {},
+    finalBonuses   : _multi.phase === 'finished' ? (_multi.finalBonuses || []) : null,
+    roundStartTime : _multi.roundStartTime,
+    roundDur       : _multi.roundDur,
+    // Temps écoulé depuis le début du round au moment du broadcast.
+    // Permet aux joueurs de calculer le lag sans dépendre de la synchro d'horloge.
+    elapsedMs      : (_multi.phase === 'playing' && _multi.roundStartTime > 0)
+                       ? Math.max(0, Date.now() - _multi.roundStartTime) : 0,
+    // BT
+    currentQuestion: (song && (_multi.phase==='playing'||_multi.phase==='answered')) ? {
+      choices  : _multi.currentChoices,
+      field    : _multi.field,
+      songUrl  : song.url || null,
+      startMode: S.btCfg?.start || 'debut',
+    } : null,
+    // URL de la chanson suivante → les joueurs commencent à la télécharger en avance
+    nextSongUrl: (() => {
+      const next = _multi.queue ? _multi.queue[_multi.round + 1] : null;
+      return next ? (next.url || null) : null;
+    })(),
+    reveal: (song && _multi.phase === 'answered') ? {
+      correct : _multi.field === 'artist' ? song.artist : song.title,
+      artist  : song.artist, title: song.title,
+    } : null,
+  });
+}
+
+function multiHostStart() {
+  if (!_multi || _multi.role !== 'host') return;
+
+
+  if (!S.songs.length) { alert('Charge des chansons d\'abord !'); return; }
+  const _multiPool = (S.btCfg?.selectedArtists?.length > 0)
+    ? S.songs.filter(s => S.btCfg.selectedArtists.includes(s.artist))
+    : S.songs;
+  const _usedPool = _multiPool.length > 0 ? _multiPool : S.songs;
+  const n = _multi.rounds === 9999 ? _usedPool.length : Math.min(_multi.rounds, _usedPool.length);
+  _multi.queue  = _usedPool.slice().sort(() => Math.random()-.5).slice(0, n);
+  // Les chansons sont déjà en cours de téléchargement depuis la création du lobby.
+  // On lance juste un prefetch de rattrapage pour les éventuelles chansons manquantes.
+  _multi.round  = 0;
+  _multi.scores = {};
+  _multi.streaks = {};
+  _multi.maxStreaks = {};
+  _multi.correctCount = {};
+  _multi.correctResponseTimes = {};
+  _multi.halfTimeScores = null;
+  _multi.lastRoundCorrect = {};
+  _multi.roundPts = {};
+  _multi.responseTimes = {};
+  _multi.finalBonuses = null;
+  _multi.players.forEach(p => {
+    _multi.scores[p.name] = 0;
+    _multi.streaks[p.name] = 0;
+    _multi.maxStreaks[p.name] = 0;
+    _multi.correctCount[p.name] = 0;
+    _multi.correctResponseTimes[p.name] = [];
+    _multi.responseTimes[p.name] = [];
+    p.answered = false;
+    p.correct = undefined;
+  });
+  _multiHostStartRound();
+}
+
+function _multiHostStartRound() {
+  if (!_multi) return;
+  const song = _multi.queue[_multi.round];
+  _multi.answers = {};
+  _multi.myAnswer = null;
+  _multi.roundPts = {};
+  _multi.players.forEach(p => { p.answered = false; p.correct = undefined; });
+  _multi.phase = 'playing';
+  _multi.roundDur = BT_DIFF[_multi.diff].dur;
+  clearInterval(_hostSvgTimer); _hostSvgTimer = null;
+
+  // ── BT ──
+  const _mField = _multi.field;
+  const _mCorrect = song[_mField];
+  // Filtrer le pool selon les artistes sélectionnés (comme pour la queue)
+  const _mFilteredSongs = (S.btCfg?.selectedArtists?.length > 0)
+    ? S.songs.filter(s => S.btCfg.selectedArtists.includes(s.artist))
+    : S.songs;
+  const _mPool = _mField === 'artist'
+    ? [...new Set(_mFilteredSongs.map(s => s.artist).filter(a => a !== _mCorrect))]
+    : [...new Set(_mFilteredSongs.map(s => s.title).filter(t => t !== _mCorrect))];
+  let _mWrong = _mPool.sort(() => Math.random() - .5).slice(0, 3);
+  while (_mWrong.length < 3) _mWrong.push('???');
+  _multi.currentChoices = [..._mWrong, _mCorrect].sort(() => Math.random() - .5);
+
+  // Envoie l'état + les choix aux joueurs avant de naviguer
+  _multi.roundStartTime = Date.now(); // approximation initiale
+  _hostBroadcast();
+
+  // Navigation sans toucher à l'audio — playSegment s'en charge lui-même via stopAudio()
+  goto('multi-game', { keepAudio: true });
+  _multiPlayRoundStartSound();
+
+  playSegment(song.url, S.btCfg?.start || 'debut', _multi.roundDur, {
+    onPlay: () => {
+      // Temps précis : l'audio joue réellement ici
+      _multi.roundStartTime = Date.now();
+      _hostBroadcast();
+      clearInterval(_hostSvgTimer);
+      const _st = _multi.roundStartTime;
+      const _dr = _multi.roundDur;
+      _hostSvgTimer = setInterval(() => {
+        const elapsed = (Date.now() - _st) / 1000;
+        const rem   = Math.max(0, _dr - elapsed);
+        const pct   = _dr > 0 ? Math.min(100, (elapsed / _dr) * 100) : 0;
+        const color = elapsed > _dr * 0.75 ? 'var(--r)' : elapsed > _dr * 0.5 ? 'var(--y)' : 'var(--g)';
+        const arc    = document.getElementById('host-speed-prog');
+        const arcTxt = document.getElementById('host-speed-elapsed');
+        const bar    = document.getElementById('host-timer-bar');
+        const txt    = document.getElementById('host-timer-txt');
+        if (arc)    { arc.setAttribute('stroke-dasharray', `${pct} 100`); arc.setAttribute('stroke', color); }
+        if (arcTxt) { arcTxt.textContent = elapsed.toFixed(1) + 's'; arcTxt.style.color = color; }
+        if (bar)    { bar.style.width = (rem / _dr * 100) + '%'; }
+        if (txt)    { txt.textContent = Math.ceil(rem) + 's restantes'; }
+        if (rem <= 0) clearInterval(_hostSvgTimer);
+      }, 100);
+    },
+    onEnd: () => { if (_multi && _multi.phase === 'playing') multiHostReveal(); }
+  });
+}
+
+function multiHostReveal() {
+  if (!_multi || _multi.phase !== 'playing') return;
+  // Délai minimum de 4s pour éviter révélation immédiate si erreur audio
+  const elapsed = Date.now() - (_multi.roundStartTime || 0);
+  const MIN_MS  = 4000;
+  if (elapsed < MIN_MS) {
+    setTimeout(() => { if (_multi && _multi.phase === 'playing') multiHostReveal(); }, MIN_MS - elapsed);
+    return;
+  }
+  stopAudio();
+  _multi.phase = 'answered';
+
+  const nRounds = _multi.queue ? _multi.queue.length : 0;
+
+  // Snapshot mi-parcours pour le bonus REMONTADA (à exactement 50% des rounds)
+  if (_multi.round === Math.floor(nRounds * 0.5) && !_multi.halfTimeScores) {
+    _multi.halfTimeScores = { ..._multi.scores };
+  }
+
+  // Stocker qui a répondu juste sur la dernière musique (bonus LAST CALL)
+  if (_multi.round === nRounds - 1) {
+    const lastSong = _multi.queue[_multi.round];
+    _multi.lastRoundCorrect = {};
+    _multi.players.forEach(p => {
+      const ans = _multi.answers[p.name];
+      _multi.lastRoundCorrect[p.name] = (ans !== undefined && ans !== null && _multiCheckAnswer(ans, lastSong));
+    });
+  }
+
+  _hostBroadcast();
+  render();
+}
+
+function multiHostNext() {
+  if (!_multi) return;
+  _multi.round++;
+  if (_multi.round >= _multi.queue.length) {
+    // ── Calcul et application des bonus de fin de partie ──
+    const bonusResult = calcFinalBonuses(_multi);
+    _multi.finalBonuses = bonusResult.bonuses;
+    Object.entries(bonusResult.byPlayer).forEach(([name, pts]) => {
+      if (pts > 0) _multi.scores[name] = (_multi.scores[name] || 0) + pts;
+    });
+    _multi.phase = 'finished';
+    // Sauvegarder dans l'historique
+    const ranked = Object.entries(_multi.scores).sort((a,b) => b[1]-a[1]);
+    saveGameHistory({
+      ts: Date.now(),
+      date: new Date().toLocaleDateString('fr-FR'),
+      winner: ranked[0] ? ranked[0][0] : '—',
+      players: _multi.players.map(p => ({
+        name: p.name,
+        score: _multi.scores[p.name] || 0,
+        correct: _multi.correctCount ? (_multi.correctCount[p.name] || 0) : 0,
+      })),
+      rounds: _multi.queue.length,
+      diff: _multi.diff || 'facile',
+      myName: getUserPseudo(),
+    });
+    _hostBroadcast();
+    _clearAudioCache(); // libérer les blobs, la partie est terminée
+    goto('multi-results');
+    return;
+  }
+  _multiHostStartRound();
+}
+
+function multiPlayerAnswer(val) {
+  if (!_multi || _multi.role !== 'player') return;
+  if (_multi.myAnswer !== null || _multi.phase !== 'playing') return;
+  _multi.myAnswer = val;
+  _ablyChan.publish('player:answer', { name: _multi.playerName, value: val });
+  try { navigator.vibrate(60); } catch(e) {}
+  render();
+}
+
+function multiHostAnswer(val) {
+  if (!_multi || _multi.role !== 'host') return;
+  if (_multi.myAnswer !== null || _multi.phase !== 'playing') return;
+  const song = _multi.queue[_multi.round];
+  const ok = _multiCheckAnswer(val, song);
+  _multi.myAnswer = val;
+  _multi.answers[_multi.hostName] = val;
+  const _hostAnswerTime = Date.now() - (_multi.roundStartTime || Date.now());
+  if (!_multi.responseTimes) _multi.responseTimes = {};
+  if (!_multi.responseTimes[_multi.hostName]) _multi.responseTimes[_multi.hostName] = [];
+  _multi.responseTimes[_multi.hostName].push(_hostAnswerTime);
+  if (!_multi.streaks) _multi.streaks = {};
+  if (!_multi.roundPts) _multi.roundPts = {};
+  if (ok) {
+    _multi.streaks[_multi.hostName] = (_multi.streaks[_multi.hostName] || 0) + 1;
+    if (_multi.streaks[_multi.hostName] > (_multi.maxStreaks[_multi.hostName] || 0)) _multi.maxStreaks[_multi.hostName] = _multi.streaks[_multi.hostName];
+    _multi.correctCount[_multi.hostName] = (_multi.correctCount[_multi.hostName] || 0) + 1;
+    if (!_multi.correctResponseTimes[_multi.hostName]) _multi.correctResponseTimes[_multi.hostName] = [];
+    _multi.correctResponseTimes[_multi.hostName].push(_hostAnswerTime);
+    const elapsedSecs = _hostAnswerTime / 1000;
+    const ptsInfo = calcPoints(_multi.diff, elapsedSecs, _multi.roundDur, _multi.streaks[_multi.hostName], false, true);
+    _multi.scores[_multi.hostName] = (_multi.scores[_multi.hostName] || 0) + ptsInfo.total;
+    _multi.roundPts[_multi.hostName] = ptsInfo;
+  } else {
+    _multi.streaks[_multi.hostName] = 0;
+    _multi.roundPts[_multi.hostName] = null;
+  }
+  const p = _multi.players.find(p => p.name === _multi.hostName);
+  if (p) { p.answered = true; p.correct = ok; }
+  if (_multi.players.every(p => p.answered)) {
+    setTimeout(() => { if (_multi && _multi.phase === 'playing') multiHostReveal(); }, 1500);
+  }
+  try { navigator.vibrate(60); } catch(e) {}
+  render();
+}
+
+
+function _multiPlayChoicesSound() {
+  try {
+    const ctx = getAudioCtx();
+    [440, 554].forEach((freq, i) => setTimeout(() => {
+      const osc = ctx.createOscillator(), g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = freq;
+      g.gain.setValueAtTime(.2, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + .09);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + .09);
+    }, i * 80));
+  } catch(e) {}
+}
+function _multiPlayRoundStartSound() {
+  try {
+    const ctx = getAudioCtx();
+    [660, 880].forEach((freq, i) => setTimeout(() => {
+      const osc = ctx.createOscillator(), g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = freq;
+      g.gain.setValueAtTime(.18, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + .07);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + .07);
+    }, i * 70));
+  } catch(e) {}
+}
+
+// ── POST-RENDER MULTI ─────────────────────────────────────────
+function _multiPostRender() {
+  // Si le joueur a déjà répondu ou qu'on n'est plus en train de jouer → arrêter le timer
+  const shouldRun = (
+    S.screen === 'multi-game' &&
+    _multi?.role === 'player' &&
+    _multi.phase === 'playing' &&
+    _multi.myAnswer === null &&
+    (_multi.currentQuestion?.choices?.length || 0) > 0
+  );
+  if (!shouldRun) {
+    clearPlayerTimer();
+  }
+  // Le timer hôte est géré dans onPlay de playSegment → rien à faire ici pour lui
+}
+
+// ── RENDER : Setup ─────────────────────────────────────────────
+
+// ── QR CODE ────────────────────────────────────────────────────
+function _getJoinUrl(code) {
+  const base = window.location.href.split('?')[0];
+  return base + '?join=' + code;
+}
+
+function _renderQR() {
+  const container = document.getElementById('qr-container');
+  if (!container || !_multi?.roomCode) return;
+  container.innerHTML = '';
+  if (typeof QRCode === 'undefined') {
+    container.innerHTML = '<p class="text-xs text-dim" style="padding:20px">QR indisponible</p>';
+    return;
+  }
+  new QRCode(container, {
+    text: _getJoinUrl(_multi.roomCode),
+    width: 160,
+    height: 160,
+    colorDark: '#06060F',
+    colorLight: '#FFFFFF',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+}
+
+function copyJoinLink() {
+  if (!_multi?.roomCode) return;
+  const url = _getJoinUrl(_multi.roomCode);
+  navigator.clipboard.writeText(url)
+    .then(() => showToast('🔗 Lien copié !'))
+    .catch(() => showToast('❌ Impossible de copier'));
+}
+
+function checkJoinParam() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const code = (params.get('join') || '').toUpperCase().trim();
+    if (/^[A-Z0-9]{4,6}$/.test(code)) {
+      // Pré-remplir le code dès que l'écran multi-setup est rendu
+      S._autoJoinCode = code;
+    }
+  } catch(e) {}
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// LOADING OVERLAY
+// ═══════════════════════════════════════════════════════════════
+function showLoadingOverlay(msg) {
+  const el = document.getElementById('loading-overlay');
+  const txt = document.getElementById('loading-text');
+  if (!el) return;
+  if (txt) txt.textContent = msg || 'Chargement…';
+  el.style.display = 'flex';
+}
+function hideLoadingOverlay() {
+  const el = document.getElementById('loading-overlay');
+  if (el) el.style.display = 'none';
+}
+
+// ── BANNIÈRE RÉSEAU ─────────────────────────────────────────────
+function showNetBanner() {
+  const b = document.getElementById('net-banner');
+  if (b) b.style.display = 'block';
+}
+function hideNetBanner() {
+  const b = document.getElementById('net-banner');
+  if (b) b.style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HISTORIQUE & STATS
+// ═══════════════════════════════════════════════════════════════
+function saveGameHistory(entry) {
+  try {
+    const raw = localStorage.getItem('bt_history');
+    const arr = raw ? JSON.parse(raw) : [];
+    arr.unshift(entry);
+    if (arr.length > 100) arr.length = 100;
+    localStorage.setItem('bt_history', JSON.stringify(arr));
+  } catch(e) { console.warn('History save error:', e); }
+}
+
+function getGameHistory() {
+  try {
+    const raw = localStorage.getItem('bt_history');
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+
+function renderStats() {
+  const history = getGameHistory();
+  const pseudo  = getUserPseudo();
+  const header  = `<div class="flex items-center gap-3 mb-4">
+    <button class="btn btn-ghost btn-sm" onclick="goto('home')">← Retour</button>
+    <h2 class="neon-player">📊 Mes Stats</h2>
+  </div>`;
+
+  if (!history.length) {
+    return `<div class="screen">${header}
+      <div class="card" style="text-align:center;padding:40px 20px">
+        <p style="font-size:2.5rem;margin-bottom:10px">🎮</p>
+        <p style="font-weight:800;margin-bottom:6px">Aucune partie jouée</p>
+        <p class="text-xs text-dim">Lance ta première partie multijoueur pour voir tes stats !</p>
+      </div>
+    </div>`;
+  }
+
+  // Aggrégation
+  let wins = 0, totalGames = history.length, totalRounds = 0;
+  let bestScore = 0;
+  const diffCount = {};
+  history.forEach(g => {
+    if (pseudo && g.winner === pseudo) wins++;
+    totalRounds += g.rounds || 0;
+    if (g.myName === pseudo || !g.myName) {
+      const me = (g.players || []).find(p => p.name === pseudo);
+      if (me && me.score > bestScore) bestScore = me.score;
+    }
+    if (g.diff) diffCount[g.diff] = (diffCount[g.diff] || 0) + 1;
+  });
+  const winRate = totalGames ? Math.round(wins / totalGames * 100) : 0;
+  const favDiff = Object.entries(diffCount).sort((a,b)=>b[1]-a[1])[0];
+
+  const DIFF_ICONS = { facile:'🟢', inter:'🟡', difficile:'🟠', hard:'🔴' };
+
+  const statsHtml = `
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+    <div class="card" style="text-align:center;padding:16px 10px">
+      <p style="font-size:1.8rem;font-weight:900;color:var(--player);font-family:'Space Mono',monospace">${totalGames}</p>
+      <p class="text-xs text-dim">Parties jouées</p>
+    </div>
+    <div class="card" style="text-align:center;padding:16px 10px">
+      <p style="font-size:1.8rem;font-weight:900;color:var(--gold);font-family:'Space Mono',monospace">${winRate}%</p>
+      <p class="text-xs text-dim">Taux de victoire</p>
+    </div>
+    <div class="card" style="text-align:center;padding:16px 10px">
+      <p style="font-size:1.8rem;font-weight:900;color:var(--green);font-family:'Space Mono',monospace">${bestScore.toLocaleString()}</p>
+      <p class="text-xs text-dim">Meilleur score</p>
+    </div>
+    <div class="card" style="text-align:center;padding:16px 10px">
+      <p style="font-size:1.8rem;font-weight:900;color:var(--purple);font-family:'Space Mono',monospace">${totalRounds}</p>
+      <p class="text-xs text-dim">Manches totales</p>
+    </div>
+  </div>
+  ${favDiff ? `<div class="card mb-3" style="padding:12px 16px;display:flex;align-items:center;gap:10px">
+    <span style="font-size:1.4rem">${DIFF_ICONS[favDiff[0]] || '🎵'}</span>
+    <div><p style="font-weight:800;font-size:.85rem">Mode favori</p>
+    <p class="text-xs text-dim">${favDiff[0]} · ${favDiff[1]} partie${favDiff[1]>1?'s':''}</p></div>
+  </div>` : ''}`;
+
+  const histHtml = history.slice(0, 20).map(g => {
+    const winner = g.winner || '—';
+    const isWin  = pseudo && winner === pseudo;
+    const ranked = (g.players || []).sort((a,b) => b.score - a.score);
+    return `<div class="card" style="padding:12px 14px;margin-bottom:8px">
+      <div class="flex items-center gap-2 mb-2">
+        <span style="font-size:.65rem;color:var(--tx2)">${g.date || ''}</span>
+        <span style="flex:1"></span>
+        ${isWin ? '<span style="font-size:.62rem;font-weight:800;color:var(--gold);background:rgba(252,211,77,.12);padding:2px 8px;border-radius:10px">🏆 Victoire</span>' : ''}
+        <span style="font-size:.62rem;color:var(--tx2)">${DIFF_ICONS[g.diff]||''} ${g.rounds||0} manches</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px">
+        ${ranked.map((p,i) => `<div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:.75rem;width:14px;text-align:center;color:var(--tx2)">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</span>
+          <span style="flex:1;font-size:.8rem;font-weight:${pseudo&&p.name===pseudo?800:600};color:${pseudo&&p.name===pseudo?'var(--player)':'var(--tx)'}">${escHtml(p.name)}</span>
+          <span style="font-size:.75rem;font-family:'Space Mono',monospace;color:var(--tx3)">${(p.score||0).toLocaleString()}</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="screen">${header}
+    ${statsHtml}
+    <h3 style="margin:16px 0 10px">📜 Historique récent</h3>
+    ${histHtml}
+    <button class="btn btn-danger btn-sm" style="margin-top:8px" onclick="if(confirm('Effacer tout l\\'historique ?')){localStorage.removeItem('bt_history');render();}">🗑 Effacer l'historique</button>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// IMPORT PLAYLIST JSON
+// ═══════════════════════════════════════════════════════════════
+function importPlaylistJSON(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      let arr = JSON.parse(e.target.result);
+      if (!Array.isArray(arr)) throw new Error('Le fichier doit contenir un tableau JSON');
+      const valid = arr.filter(s => s.url && (s.title || s.artist));
+      if (!valid.length) throw new Error('Aucun titre valide trouvé (champs requis: url + title ou artist)');
+      const existingUrls = new Set(S.songs.map(s => s.url));
+      let added = 0;
+      valid.forEach(s => {
+        if (!existingUrls.has(s.url)) {
+          S.songs.push({ file: null, name: s.title || s.artist || 'Inconnu', url: s.url, artist: s.artist || '', title: s.title || '' });
+          existingUrls.add(s.url);
+          added++;
+        }
+      });
+      saveServerDataToIDB();
+      S.musicCardOpen = false;
+      render();
+      showToast(`✅ ${added} titre${added>1?'s':''} importé${added>1?'s':''}  (${valid.length - added} dupliqué${valid.length - added > 1?'s':''} ignoré${valid.length - added > 1?'s':''})`, 4000);
+    } catch(err) {
+      showToast('❌ Erreur JSON : ' + err.message, 4500);
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PARTAGE DE SCORE
+// ═══════════════════════════════════════════════════════════════
+function shareScore() {
+  if (!_multi) return;
+  const scores  = _multi.scores || {};
+  const ranked  = Object.entries(scores).sort((a,b) => b[1]-a[1]);
+  const nRounds = _multi.queue ? _multi.queue.length : 0;
+  const diff    = _multi.diff || 'facile';
+  const DIFF_ICONS = { facile:'🟢', inter:'🟡', difficile:'🟠', hard:'🔴' };
+  const diffIcon = DIFF_ICONS[diff] || '🎵';
+  const winner = ranked[0] ? ranked[0][0] : '—';
+  const lines = ranked.map(([ name, score ], i) => {
+    const medal = ['🥇','🥈','🥉'][i] || `#${i+1}`;
+    const correct = _multi.correctCount ? (_multi.correctCount[name] || 0) : '?';
+    return `${medal} ${name} — ${score.toLocaleString()} pts (${correct}/${nRounds})`;
+  }).join('\n');
+  const text = `🎵 BlindTest Pro\n${diffIcon} ${diff.toUpperCase()} · ${nRounds} manches\n\n${lines}\n\n🏆 Vainqueur : ${winner}`;
+
+  if (navigator.share) {
+    navigator.share({ title: 'BlindTest Pro — Résultats', text }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text)
+      .then(() => showToast('📋 Résultats copiés dans le presse-papiers !', 3000))
+      .catch(() => showToast('❌ Impossible de partager', 3000));
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PWA SETUP
+// ═══════════════════════════════════════════════════════════════
+function _setupPWA() {
+  // Manifest dynamique (installable sur écran d'accueil)
+  try {
+    const iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#06060F" rx="80"/><text x="256" y="340" font-size="280" text-anchor="middle" fill="#22D3EE">🎵</text></svg>`;
+    const iconURL = 'data:image/svg+xml;base64,' + btoa(iconSVG);
+    const manifest = {
+      name: 'BlindTest Pro',
+      short_name: 'BlindTest',
+      description: 'Blind test multijoueur en ligne',
+      start_url: './',
+      display: 'standalone',
+      orientation: 'portrait',
+      background_color: '#06060F',
+      theme_color: '#06060F',
+      icons: [
+        { src: iconURL, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+      ]
+    };
+    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const link = document.getElementById('pwa-manifest');
+    if (link) link.href = url;
+  } catch(e) { console.warn('[PWA] Manifest error:', e); }
+
+  // Service Worker (cache offline)
+  if ('serviceWorker' in navigator) {
+    try {
+      const swSrc = `
+const CACHE = 'bt-cache-v1';
+const PRECACHE = [];
+self.addEventListener('install', e => { self.skipWaiting(); });
+self.addEventListener('activate', e => { e.waitUntil(clients.claim()); });
+self.addEventListener('fetch', e => {
+  const req = e.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  // Ne pas cacher les ressources Archive.org (trop volumineuses)
+  if (url.hostname.includes('archive.org')) return;
+  // Ne pas cacher Ably
+  if (url.hostname.includes('ably.')) return;
+  // Cache-first pour ressources statiques, network-first sinon
+  if (url.origin === self.location.origin) {
+    e.respondWith(
+      caches.open(CACHE).then(cache =>
+        cache.match(req).then(cached => {
+          const networkFetch = fetch(req).then(res => {
+            if (res && res.status === 200) cache.put(req, res.clone());
+            return res;
+          }).catch(() => cached);
+          return cached || networkFetch;
+        })
+      )
+    );
+  }
+});`;
+      const swBlob = new Blob([swSrc], { type: 'application/javascript' });
+      const swURL  = URL.createObjectURL(swBlob);
+      navigator.serviceWorker.register(swURL).catch(() => {
+        // SW blob non supporté dans ce contexte — pas bloquant
+      });
+    } catch(e) { /* pas critique */ }
+  }
+}
+
+// Exposer les nouvelles fonctions
+window.importPlaylistJSON = importPlaylistJSON;
+window.shareScore = shareScore;
+window.renderStats = renderStats;
+
+async function boot() {
+  getUserId();
+  loadVolume();
+  checkJoinParam();
+  _setupPWA();
+  await tryRestoreHandles();
+  render();
+  if (S._autoJoinCode) {
+    setTimeout(() => {
+      const inp = document.getElementById('multi-code');
+      if (inp) { inp.value = S._autoJoinCode; inp.focus(); }
+    }, 200);
+  }
+  if (!getUserPseudo()) {
+    setTimeout(() => showPseudoModal(), 600);
+  }
+}
+
+boot();
+
+window.goto = goto;
+window.addEventListener('beforeunload', () => { _clearAudioCache(); });
+window.showPseudoModal = showPseudoModal;
+window.getUserId = getUserId;
+window.getUserPseudo = getUserPseudo;
+window.setUserPseudo = setUserPseudo;
+window.multiCreateRoom = multiCreateRoom;
+window.renderMultiHostSettings = renderMultiHostSettings;
+window.multiJoinRoom = multiJoinRoom;
+window.multiHostStart = multiHostStart;
+window.multiHostReveal = multiHostReveal;
+window.multiHostNext = multiHostNext;
+window.multiPlayerAnswer = multiPlayerAnswer;
+window.multiHostAnswer = multiHostAnswer;
+window.ablyDisconnect = ablyDisconnect;
+window.copyRoomCode = copyRoomCode;
+window.copyJoinLink = copyJoinLink;
+window.sendReaction = sendReaction;
+window.showToast = showToast;
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    if (_audio && !_audio.paused) { _audio.pause(); }
+  } else {
+    if (S.screen === 'multi-game' && _multi?.phase === 'playing') {
+      if (_audio && _audio.paused) { _audio.play().catch(() => {}); }
+    }
+  }
+});
+</script>
+</body>
+</html>
